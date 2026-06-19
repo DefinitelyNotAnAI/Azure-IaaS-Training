@@ -1,7 +1,7 @@
-# Quanta Azure IaaS Workshop Hub - Website Plan
+# Azure IaaS Fundamentals - Website Plan
 
 ## Purpose
-Build a lightweight workshop hub that supports a Microsoft Learn sandbox delivery model for the Quanta Azure IaaS session. The site is **not** a custom LMS or lab platform. It should act as a centralized workshop shell that:
+Build a lightweight, **reusable** workshop hub that supports a Microsoft Learn sandbox delivery model for an instructor-led Azure IaaS session. The app name is generic (**Azure IaaS Fundamentals**); the specific customer/session is identified only via a configurable **Session Information** block on the welcome page. The site is **not** a custom LMS or lab platform. It should act as a centralized workshop shell that:
 
 1. gives participants one place to start,
 2. captures participant name for simple status tracking,
@@ -27,10 +27,10 @@ This should be simple, reliable, and fast to build.
 ---
 
 ## Workshop delivery assumptions
-The course uses Microsoft Learn sandbox modules instead of a lab in our Azure subscription.
+The course uses Microsoft Learn content (instructor-hosted lecture + individual labs) instead of a lab in our Azure subscription. **Lab type is mixed by module** (locked decision — see [implementation-plan.md](implementation-plan.md) §1 and §12.1): Networking and Storage are **click-through simulations** (no sign-in, no sandbox, no account), Compute is the only **real-Azure** lab (Learn sandbox + personal MSA), and **watch-along** is the universal fallback.
 
 ### Key implications
-- Participants launch official Learn modules and use Microsoft-managed sandbox subscriptions.
+- Participants open official Learn units: **simulations** for Networking/Storage (zero prerequisites) and a **Microsoft-managed sandbox subscription** only for the Compute VM lab.
 - The site should provide **context and navigation**, not full exercise instructions.
 - The workshop is run live by an instructor with explicit regroup checkpoints.
 - Participant count is uncertain, so the website must scale without manual provisioning.
@@ -62,21 +62,26 @@ The course uses Microsoft Learn sandbox modules instead of a lab in our Azure su
 
 #### 1. Welcome / Check-in
 Purpose:
-- capture participant name
+- capture participant **name and email**
 - establish expectations
 - explain how the workshop will run
 
 Content:
-- workshop title
+- workshop title (**Azure IaaS Fundamentals** — generic, reused across deliveries)
+- **Session Information** block (configurable, per delivery):
+  - session name (e.g. `Quanta Azure Workshop`)
+  - session date/time (e.g. `June 25th, 10:00 am`)
+  - these are the only customer-specific values in the app, set in `config.js`
 - short description
 - what to keep open (hub, Learn, Azure portal)
 - note that sandboxes are temporary and simplified
-- participant name input
+- **required name and email inputs** (email is the identity; re-entering it on any device/window resumes the same session — see data model)
 - “Start Workshop” button
 
-#### 2. Module 1 - Platform & Architecture
+#### 2. Platform & Architecture (instructor-led framing)
 Purpose:
 - front-load enterprise framing before hands-on work
+- this page is read while the instructor runs the live ALZ demo; it is **not** a numbered hands-on module and has no status controls
 
 Content:
 - short explanation of ALZ and CAF
@@ -84,7 +89,7 @@ Content:
 - optional link to architecture diagram / reference slide
 - “Continue to Networking Module” button
 
-#### 3. Module 2 - Networking
+#### 3. Module 1 - Networking
 Purpose:
 - prepare participants for the networking Learn exercise
 
@@ -102,10 +107,10 @@ Content blocks:
   - Need help
   - Watching only
 
-#### 4. Module 3 - Compute
+#### 4. Module 2 - Compute
 Same pattern as Networking, but focused on VM deployment.
 
-#### 5. Module 4 - Storage
+#### 5. Module 3 - Storage
 Same pattern as Networking, but focused on storage account creation.
 
 #### 6. Governance & Operations Overlay
@@ -141,9 +146,9 @@ The dashboard should be simple.
 - per-module status summary
 
 ### Recommended table view
-| Participant | Module 1 | Module 2 | Module 3 | Module 4 | Current status | Last update |
-|-------------|----------|----------|----------|----------|----------------|-------------|
-| Lee Robbins | Complete | Started  | Not started | Not started | Started | 10:42 AM |
+| Participant | M1 Networking | M2 Compute | M3 Storage | Current status | Last update |
+|-------------|---------------|------------|------------|----------------|-------------|
+| Lee Robbins | Complete | Started | Not started | Started | 10:42 AM |
 
 ### Recommended dashboard controls
 - refresh
@@ -164,14 +169,13 @@ Use a lightweight backend with one primary participant record.
 ### Participant record
 ```json
 {
-  "participantId": "uuid",
+  "email": "lee.robbins@contoso.com",
   "displayName": "Lee Robbins",
   "moduleStatuses": {
     "welcome": "complete",
     "module1": "complete",
     "module2": "started",
     "module3": "not_started",
-    "module4": "not_started",
     "wrapup": "not_started"
   },
   "currentModule": "module2",
@@ -189,8 +193,8 @@ Use a constrained set:
 - `watching_only`
 
 ### Important design note
-`participantId` is the true system key.
-`displayName` is user-entered and should be treated as a label, not a unique identifier.
+The **normalized email** (trimmed + lowercased) is the true system key — it makes check-in idempotent and lets a participant resume from any browser, InPrivate window, or device by re-entering it.
+`displayName` (the entered name) is a **required** label shown on the admin dashboard, not a unique identifier. The email + name table is **PII** — keep it out of the repo and purge the session's rows after each delivery (see implementation-plan.md §12).
 
 ---
 
@@ -211,6 +215,8 @@ Keep the stack simple.
 ### Recommendation
 Use the stack you can ship quickly and trust during a live event.
 Prioritize reliability over elegance.
+
+> **Locked decision (see [implementation-plan.md](implementation-plan.md) §1–§2 for the authoritative detail):** plain static HTML/CSS/JS on **Azure Static Web Apps (Standard)**, with the API as a **standalone Azure Functions app (Flex Consumption) linked to SWA** and data in **Azure Table Storage**. The Functions app uses **managed identity** for storage (no connection string), **always-ready instances** to avoid cold starts during the event, and App Insights. Linking the backend keeps same-origin `/api/*` routing, so there is **no CORS** to configure. This choice favors stability and scalability over the convenience of SWA's built-in managed functions.
 
 ---
 
@@ -276,10 +282,10 @@ The hub should reduce mental load, not add to it.
 The site should guide users through the workshop in this order:
 
 1. Welcome / Check-in
-2. Module 1 - Platform & Architecture
-3. Module 2 - Networking
-4. Module 3 - Compute
-5. Module 4 - Storage
+2. Platform & Architecture (instructor-led framing)
+3. Module 1 - Networking
+4. Module 2 - Compute
+5. Module 3 - Storage
 6. Governance overlay
 7. Wrap-up
 
@@ -348,10 +354,9 @@ This sandbox uses a flat, temporary subscription model. In a production landing 
 - participant watches only and does not do the exercise
 
 ### Recommended handling for duplicate names
-Allow duplicates, but rely on unique `participantId` under the hood.
-Dashboard can show:
-- `Lee Robbins (a1b2)`
-- `Lee Robbins (c3d4)`
+Duplicate display names are harmless because the **email** is the unique key under the hood. Two people both named “Lee Robbins” are distinct rows (different emails); the dashboard can disambiguate with the email if needed:
+- `Lee Robbins (lee.robbins@contoso.com)`
+- `Lee Robbins (l.robbins@fabrikam.com)`
 only if ambiguity actually occurs.
 
 ---
@@ -360,7 +365,7 @@ only if ambiguity actually occurs.
 
 ### Milestone 1 - MVP shell
 - landing page
-- name capture
+- name + email capture
 - static module pages
 - links only
 
@@ -401,8 +406,8 @@ Use this as a starting point with GitHub Copilot:
 Create a lightweight workshop hub website for an instructor-led Azure training session that uses Microsoft Learn sandbox exercises.
 
 Requirements:
-- participant enters name on first page
-- app generates a participantId and stores it locally
+- participant enters **name and email** on first page
+- app uses the **normalized email as the identity** and caches it locally; re-entering email + name on any device resumes the same session
 - module pages contain static framing text, curated links, and status buttons
 - status buttons update backend data for that participant
 - build an admin dashboard that shows participant name, current module, current status, per-module completion, and last updated time
