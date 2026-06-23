@@ -11,6 +11,15 @@ param uniqueSuffix string = substring(uniqueString(subscription().id), 0, 6)
 @description('Workshop tenant domain for portal deep-links')
 param workshopTenantDomain string = 'MngEnvMCAP475636.onmicrosoft.com'
 
+@description('Table Storage PartitionKey for this cohort')
+param sessionId string = 'CHANGE-ME-PER-COHORT'
+
+@description('Shared join code sent by participants')
+param sessionCode string = 'CHANGE-ME-PER-DELIVERY'
+
+@description('Admin dashboard access code')
+param adminAccessCode string = 'CHANGE-ME-BEFORE-WORKSHOP'
+
 var appRgName = 'workshop-app-rg'
 
 resource appRg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
@@ -27,6 +36,9 @@ module appResources 'app-resources.bicep' = {
     uniqueSuffix: uniqueSuffix
     workshopTenantDomain: workshopTenantDomain
     subscriptionId: subscription().subscriptionId
+    sessionId: sessionId
+    sessionCode: sessionCode
+    adminAccessCode: adminAccessCode
   }
 }
 

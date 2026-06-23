@@ -2,6 +2,9 @@ param location string
 param uniqueSuffix string
 param workshopTenantDomain string
 param subscriptionId string
+param sessionId string = 'CHANGE-ME-PER-COHORT'
+param sessionCode string = 'CHANGE-ME-PER-DELIVERY'
+param adminAccessCode string = 'CHANGE-ME-BEFORE-WORKSHOP'
 
 var uamiName            = 'workshop-app-mi'
 var storageAccountName  = 'wkstore${uniqueSuffix}'
@@ -150,9 +153,9 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'AZURE_CLIENT_ID',                        value: uami.properties.clientId }
         { name: 'STORAGE_ACCOUNT_NAME',                   value: storageAccount.name }
         { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING',  value: appInsights.properties.ConnectionString }
-        { name: 'SESSION_CODE',                           value: 'CHANGE-ME-PER-DELIVERY' }
-        { name: 'ADMIN_ACCESS_CODE',                      value: 'CHANGE-ME-BEFORE-WORKSHOP' }
-        { name: 'SESSION_ID',                             value: 'CHANGE-ME-PER-COHORT' }
+        { name: 'SESSION_CODE',                           value: sessionCode }
+        { name: 'ADMIN_ACCESS_CODE',                      value: adminAccessCode }
+        { name: 'SESSION_ID',                             value: sessionId }
         { name: 'SUBSCRIPTION_ID',                        value: subscriptionId }
         { name: 'WORKSHOP_TENANT_DOMAIN',                 value: workshopTenantDomain }
         { name: 'HUB_VNET_RG',                           value: 'hub-rg' }
