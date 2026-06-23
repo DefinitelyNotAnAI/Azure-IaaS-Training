@@ -23,7 +23,7 @@ window.APP_CONFIG = {
     },
     module2: {
       label:         'Module 2 — Peering',
-      portalSection: 'peering
+      portalSection: 'peerings',
     },
     module3: {
       label:         'Module 3 — Compute',
