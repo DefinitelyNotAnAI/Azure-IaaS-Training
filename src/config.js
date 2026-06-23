@@ -22,12 +22,12 @@ window.APP_CONFIG = {
       portalSection: 'virtualnetworks',        // used to build portal deep-links
     },
     module2: {
-      label:         'Module 2 — Compute',
-      portalSection: 'virtualmachines',
+      label:         'Module 2 — Peering',
+      portalSection: 'peerings',
     },
     module3: {
-      label:         'Module 3 — Storage',
-      portalSection: 'storageaccounts',
+      label:         'Module 3 — Compute',
+      portalSection: 'virtualmachines',
     },
     bonus: {
       label:         'Bonus — Storage',

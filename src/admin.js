@@ -7,8 +7,8 @@
   const MODULE_LABELS = {
     onboarding: 'Sign In',
     module1: 'M1 Networking',
-    module2: 'M2 Compute',
-    module3: 'M3 Storage',
+    module2: 'M2 Peering',
+    module3: 'M3 Compute',
   };
   const STATUS_LABELS = {
     not_started:   'Not started',
