@@ -19,6 +19,7 @@ services:
 
   web:
     project: ./src
+    dist: "."
     host: staticwebapp
 
 infra:
