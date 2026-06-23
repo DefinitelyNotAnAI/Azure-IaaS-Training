@@ -5,10 +5,10 @@
 window.APP_CONFIG = {
 
   // ── Per-delivery fields (edit these for each session) ───────────────────────
-  sessionId:   'quanta-2026-07-15',            // Table PartitionKey — change per delivery
+  sessionId:   'quanta-2026-06-23',            // Table PartitionKey — change per delivery
   sessionName: 'Quanta Azure IaaS Workshop',
-  sessionDate: 'July 15th, 9:00 am',
-  sessionCode: 'CHANGE-ME',                    // Shared with participants — rotate per delivery
+  sessionDate: 'June 23rd',
+  sessionCode: 'IaaS2026',                     // Shared with participants — rotate per delivery
 
   // ── Module definitions ───────────────────────────────────────────────────────
   // Tracked modules: onboarding → module1 → module2 → module3
