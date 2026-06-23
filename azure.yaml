@@ -19,7 +19,6 @@ services:
 
   web:
     project: ./src
-    language: js
     host: staticwebapp
 
 infra:
