@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bonus — Storage — Azure IaaS Workshop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Fundamentals</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Assignment banner -->
+  <div id="assignment-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your RG:</strong> <span id="banner-rg"></span></span>
+    </div>
+    <a id="banner-portal-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Resource Group →</a>
+  </div>
+
+  <h2 class="page-title">Bonus — Azure Storage</h2>
+  <p class="page-subtitle">Create a storage account, configure Blob containers, and explore access tiers — if you have time.</p>
+
+  <div class="callout callout-info">
+    <strong>Bonus module</strong> — This module is optional. Complete it if you finish the core modules early or want to explore storage independently after the session.
+  </div>
+
+  <div class="card">
+    <h2>What you're about to do</h2>
+    <p>You will create an <strong>Azure Storage account</strong> in your assigned resource group, configure Blob containers, and explore how Azure organises and tiers unstructured data at scale.</p>
+    <ul>
+      <li>Create a storage account with LRS redundancy in your spoke RG.</li>
+      <li>Create a Blob container and upload a test file.</li>
+      <li>Explore hot / cool / archive access tier options and their cost implications.</li>
+      <li>Review the storage account's private endpoint configuration (reference only).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>How it fits into enterprise Azure</h2>
+    <p>Azure Storage is the universal persistence layer for IaaS workloads:</p>
+    <ul>
+      <li><strong>Managed disks</strong> are built on top of Page Blobs — the same storage service, just abstracted into a disk-shaped API.</li>
+      <li><strong>Private endpoints</strong> bind a storage account to your spoke VNet, ensuring traffic never leaves the Microsoft backbone.</li>
+      <li><strong>Lifecycle management policies</strong> automatically tier blobs from hot to cool to archive based on last-access time, reducing costs for rarely-accessed data.</li>
+      <li><strong>Azure Backup</strong> uses a Recovery Services Vault backed by geo-redundant storage (GRS) — your VM backups are redundant across a region pair.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Lab steps — Create a storage account</h2>
+    <ol class="lab-steps">
+      <li>Open the portal link above. Click <strong>+ Create</strong> → search for <strong>Storage account</strong> → Create.</li>
+      <li>
+        On <em>Basics</em>:
+        <ul>
+          <li>Resource group: your assigned RG (shown in the banner)</li>
+          <li>Storage account name: <code>st<span id="step-slot-suffix"></span>workshop</code> (lowercase, no hyphens, globally unique)</li>
+          <li>Region: <strong>East US</strong></li>
+          <li>Performance: <strong>Standard</strong></li>
+          <li>Redundancy: <strong>Locally-redundant storage (LRS)</strong></li>
+        </ul>
+      </li>
+      <li>On <em>Advanced</em>: Enable <strong>Allow Blob public access: Disabled</strong> (security best practice).</li>
+      <li>Click <strong>Review + Create</strong> → <strong>Create</strong>.</li>
+      <li>Once deployed, open the storage account → <strong>Containers</strong> → <strong>+ Container</strong>. Name it <code>workshop-data</code>, access level <strong>Private</strong>.</li>
+      <li>Upload any small file and verify it appears in the container listing.</li>
+      <li>Explore <strong>Lifecycle management</strong> under <em>Data management</em> — review the rule types available.</li>
+    </ol>
+
+    <a class="link-card" href="https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create" target="_blank" rel="noopener noreferrer">
+      <span class="link-card-icon">📖</span>
+      <div class="link-card-body">
+        <div class="link-card-title">Create a storage account — Quickstart</div>
+        <div class="link-card-desc">Step-by-step guide for creating and configuring an Azure Storage account in the portal.</div>
+      </div>
+    </a>
+    <a class="link-card" href="https://learn.microsoft.com/en-us/training/modules/configure-blob-storage/" target="_blank" rel="noopener noreferrer">
+      <span class="link-card-icon">📚</span>
+      <div class="link-card-body">
+        <div class="link-card-title">Configure Azure Blob Storage — Full module</div>
+        <div class="link-card-desc">Microsoft Learn module covering containers, access tiers, lifecycle policies, and replication.</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="page-nav">
+    <a href="wrapup.html" class="btn btn-secondary">← Back to Wrap-up</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderAssignmentBanner();
+
+    var p    = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+    // Slot suffix for storage account name: user01 → 01
+    var suffix = slot.replace('user', '');
+    var el = document.getElementById('step-slot-suffix');
+    if (el) el.textContent = suffix;
+  });
+</script>
+</body>
+</html>

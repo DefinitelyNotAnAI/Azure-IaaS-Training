@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Module 1 — Networking — Azure IaaS Workshop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Fundamentals</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Assignment banner: populated by renderAssignmentBanner() -->
+  <div id="assignment-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your RG:</strong> <span id="banner-rg"></span></span>
+      <span><strong>Your CIDR:</strong> <span id="banner-cidr"></span></span>
+    </div>
+    <a id="banner-portal-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Resource Group →</a>
+  </div>
+
+  <h2 class="page-title">Module 1 — Networking</h2>
+  <p class="page-subtitle">Virtual networks, subnets, and the routing foundation for everything else in Azure IaaS.</p>
+
+  <div class="card">
+    <h2>What you're about to do</h2>
+    <p>You will create a <strong>Virtual Network (VNet)</strong> in your assigned resource group — a pre-provisioned, RBAC-isolated RG in the workshop subscription. This is a real Azure deployment, not a simulation.</p>
+    <ul>
+      <li>Create VNet <code id="vnet-name"></code> with address space <code id="vnet-cidr"></code>.</li>
+      <li>Add subnet <strong>workload</strong> — use the first <code>/26</code> block of your CIDR.</li>
+      <li>Review the default system routes Azure attaches automatically.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>How it fits into enterprise Azure</h2>
+    <p>In an Azure Landing Zone deployment, each workload team owns a <strong>spoke VNet</strong> with a dedicated, non-overlapping address space. Your spoke today is the CIDR shown in the banner above.</p>
+    <ul>
+      <li>Spoke VNets peer back to a central <strong>hub VNet</strong> (10.0.0.0/16) for shared services and internet egress.</li>
+      <li><strong>Subnets</strong> segment the spoke into functional tiers (web, app, data), each with its own NSG.</li>
+      <li><strong>User-Defined Routes (UDRs)</strong> force east-west traffic through the hub firewall for inspection.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Lab steps — Create your VNet</h2>
+
+    <ol class="lab-steps">
+      <li>
+        Open the portal link in the banner above. You should land on your resource group.
+      </li>
+      <li>
+        Click <strong>+ Create</strong> and search for <strong>Virtual network</strong>. Click <strong>Create</strong>.
+      </li>
+      <li>
+        On the <em>Basics</em> tab:
+        <ul>
+          <li>Resource group: <strong><span id="step-rg"></span></strong> (already selected)</li>
+          <li>Name: <strong><span id="step-vnet-name"></span></strong></li>
+          <li>Region: <strong>East US</strong> (match the hub)</li>
+        </ul>
+      </li>
+      <li>
+        On the <em>IP Addresses</em> tab, set the address space to <strong><span id="step-cidr"></span></strong>. Then add a subnet named <strong>workload</strong> with the first <code>/26</code> of your range.
+      </li>
+      <li>
+        Leave Security defaults (no Bastion, no Firewall) — we'll access VMs through the <em>hub's</em> Azure Bastion in Module 3.
+      </li>
+      <li>Click <strong>Review + Create</strong>, then <strong>Create</strong>. Deployment takes under 30 seconds.</li>
+    </ol>
+
+    <a class="link-card" href="https://learn.microsoft.com/en-us/azure/virtual-network/quick-create-portal" target="_blank" rel="noopener noreferrer">
+      <span class="link-card-icon">📖</span>
+      <div class="link-card-body">
+        <div class="link-card-title">Azure Virtual Network — Quickstart</div>
+        <div class="link-card-desc">Step-by-step reference for creating a VNet in the portal.</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="callout callout-hold">
+    <strong>⏸ Hold for regroup</strong>
+    After creating your VNet, click <strong>Complete</strong> above. Wait for the instructor to regroup before moving on to Module 2.
+  </div>
+
+  <div class="page-nav">
+    <a href="index.html" class="btn btn-secondary">← Sign In</a>
+    <a href="module2.html" class="btn btn-primary">Continue to Module 2 — Peering →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderAssignmentBanner();
+    WorkshopApp.renderStatusRow('module1');
+
+    // Fill in slot-specific values
+    var p = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+    var cidr = (p && p.assignedCidr) || '10.10.X.0/24';
+    var rg   = (p && p.assignedRg)   || '<your-rg>';
+
+    ['vnet-name', 'step-vnet-name'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = 'vnet-' + slot;
+    });
+    ['vnet-cidr', 'step-cidr'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = cidr;
+    });
+    var rgEl = document.getElementById('step-rg');
+    if (rgEl) rgEl.textContent = rg;
+  });
+</script>
+</body>
+</html>
+

@@ -1,0 +1,18 @@
+# Functions local settings — may contain secrets, never commit
+api/local.settings.json
+.env
+*.local.*
+
+# Node
+node_modules/
+api/node_modules/
+
+# SWA CLI output
+.swa/
+
+# Azure Developer CLI environments
+.azure/
+
+# OS
+.DS_Store
+Thumbs.db

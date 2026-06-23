@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Platform &amp; Architecture — Azure IaaS Workshop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Fundamentals</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <h2 class="page-title">Platform &amp; Architecture</h2>
+  <p class="page-subtitle">Instructor-led demo — follow along while your instructor walks through the reference architecture.</p>
+
+  <div class="card">
+    <h2>The Azure platform model</h2>
+    <p>Before we touch individual resources, it helps to understand <em>where</em> those resources land in a well-governed Azure estate. Microsoft organises environments using a hierarchy designed for enterprise scale:</p>
+    <ul>
+      <li><strong>Management groups</strong> — govern policy and role assignments across all child subscriptions from one place.</li>
+      <li><strong>Subscriptions</strong> — the billing and isolation boundary for workloads; one subscription per workload environment is the landing-zone pattern.</li>
+      <li><strong>Resource groups</strong> — the deployment and lifecycle unit for a workload; everything in a resource group lives or dies together.</li>
+    </ul>
+    <p>Everything you deploy in today's labs lives inside a resource group, inside a subscription, governed by policies set at the management group level.</p>
+  </div>
+
+  <div class="card">
+    <h2>How it fits: Azure Landing Zones</h2>
+    <p>The landing zone pattern separates <em>platform</em> concerns (networking hub, identity, governance, security tooling) from <em>workload</em> concerns (the VNets, VMs, and storage accounts you are about to build). In a well-managed enterprise deployment:</p>
+    <ul>
+      <li>A central <strong>hub VNet</strong> carries shared services — firewall, DNS resolver, VPN/ExpressRoute gateway.</li>
+      <li>Each workload subscription gets a <strong>spoke VNet</strong>, peered back to the hub — isolated address space, routed through the hub firewall for egress.</li>
+      <li><strong>Azure Policy</strong> enforces configuration standards at scale: allowed VM SKUs, required tags, mandatory diagnostic settings, and more — automatically, without per-resource configuration.</li>
+      <li><strong>Microsoft Defender for Cloud</strong> provides a unified security posture score and alerts across the entire estate.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Reference architecture</h2>
+    <p>Your instructor is walking through the official Azure landing zone conceptual architecture diagram. You can open it directly:</p>
+    <a class="link-card" href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/" target="_blank" rel="noopener noreferrer">
+      <span class="link-card-icon">🏗️</span>
+      <div class="link-card-body">
+        <div class="link-card-title">Azure landing zone conceptual architecture</div>
+        <div class="link-card-desc">Microsoft Cloud Adoption Framework — management group hierarchy, hub-spoke topology, and enterprise-scale landing zone design principles.</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="page-nav">
+    <a href="module1.html" class="btn btn-primary">Continue to Module 1 — Networking →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+  });
+</script>
+</body>
+</html>

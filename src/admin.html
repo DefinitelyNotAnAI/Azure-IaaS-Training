@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instructor Dashboard — Azure IaaS Workshop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Fundamentals — <span id="session-name-header">Instructor Dashboard</span></h1>
+  </div>
+</header>
+
+<main class="page-wrap">
+
+  <!-- ── Access gate ──────────────────────────────────────────────────────── -->
+  <div id="access-gate">
+    <div class="access-gate-wrap">
+      <div class="card">
+        <h2 style="font-size:1.15rem;margin-bottom:0.85rem">Instructor access</h2>
+        <p style="margin-bottom:1rem;font-size:0.875rem;color:#605e5c">
+          Enter the access code configured in the <code>ADMIN_ACCESS_CODE</code> app setting.
+        </p>
+        <form id="access-form" class="checkin-form" novalidate>
+          <div class="field-group">
+            <label for="access-code-input">Access code</label>
+            <input type="password" id="access-code-input" placeholder="Enter access code"
+                   autocomplete="off" required />
+          </div>
+          <div id="access-error" style="color:#a4262c;font-size:0.875rem;min-height:1.2em"></div>
+          <button type="submit" class="btn btn-primary">Open dashboard</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Dashboard ────────────────────────────────────────────────────────── -->
+  <div id="dashboard-section" style="display:none">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem">
+      <div>
+        <h2 class="page-title" style="margin-bottom:0.1rem">Dashboard</h2>
+        <p style="color:#605e5c;font-size:0.875rem">
+          <span id="participant-count">—</span>
+          &nbsp;·&nbsp;
+          <span id="refresh-status"></span>
+        </p>
+      </div>
+      <div style="display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-secondary" id="refresh-btn">↻ Refresh</button>
+        <label class="auto-refresh-label">
+          <input type="checkbox" id="auto-refresh-toggle" checked />
+          Auto-refresh (30 s)
+        </label>
+      </div>
+    </div>
+
+    <!-- Readiness gauge -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <h3 style="font-size:0.9rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#605e5c;margin-bottom:0.65rem">Cohort Readiness</h3>
+      <div id="readiness-gauge"></div>
+    </div>
+
+    <!-- Regroup summary -->
+    <h3 style="font-size:0.95rem;font-weight:600;margin-bottom:0.7rem">Module status</h3>
+    <div class="regroup-summary" id="regroup-summary" style="margin-bottom:1.5rem"></div>
+
+    <!-- Tabs -->
+    <div class="tab-bar" style="display:flex;gap:0;border-bottom:2px solid #edebe9;margin-bottom:1rem">
+      <button class="tab-btn active" data-tab="participants"
+              style="padding:0.55rem 1.1rem;border:none;background:none;cursor:pointer;font-size:0.9rem;font-weight:500;border-bottom:2px solid #0078d4;margin-bottom:-2px">
+        Participants
+      </button>
+      <button class="tab-btn" data-tab="assignments"
+              style="padding:0.55rem 1.1rem;border:none;background:none;cursor:pointer;font-size:0.9rem;color:#605e5c;border-bottom:2px solid transparent;margin-bottom:-2px">
+        Slot Pool
+      </button>
+    </div>
+
+    <!-- Participants tab -->
+    <div id="tab-participants" class="tab-panel">
+      <div class="card">
+        <div class="dashboard-controls">
+          <select id="filter-status" aria-label="Filter by status">
+            <option value="">All participants</option>
+            <option value="need_help">Need Help</option>
+            <option value="started">Started</option>
+            <option value="complete">Complete</option>
+            <option value="watching_only">Watching Along</option>
+            <option value="not_started">Not started</option>
+          </select>
+        </div>
+        <div class="participants-table-wrap">
+          <table class="participants-table" aria-label="Participant status">
+            <thead>
+              <tr>
+                <th>Name / Email</th>
+                <th>Slot</th>
+                <th>Sign In</th>
+                <th>M1 Networking</th>
+                <th>M2 Peering</th>
+                <th>M3 Compute</th>
+                <th>Last update</th>
+              </tr>
+            </thead>
+            <tbody id="participants-tbody">
+              <tr><td colspan="7" style="text-align:center;color:#605e5c;padding:1.5rem">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assignments tab -->
+    <div id="tab-assignments" class="tab-panel" style="display:none">
+      <div class="card">
+        <div class="participants-table-wrap">
+          <table class="participants-table" aria-label="Slot pool">
+            <thead>
+              <tr>
+                <th>Slot</th>
+                <th>Resource Group</th>
+                <th>CIDR</th>
+                <th>Status</th>
+                <th>TAP issued</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="assignments-tbody">
+              <tr><td colspan="6" style="text-align:center;color:#605e5c;padding:1.5rem">Click "Slot Pool" tab to load.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:0.78rem;color:#a19f9d;margin-top:1.25rem;text-align:center">
+      ⚠ This dashboard shows participant PII (names and emails). Close this tab at the end of the session.
+    </p>
+
+  </div><!-- /dashboard-section -->
+
+</main>
+
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
