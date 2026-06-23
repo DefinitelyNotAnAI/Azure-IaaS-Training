@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wrap-up — Azure IaaS Workshop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Fundamentals</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <h2 class="page-title">Wrap-up</h2>
+  <p class="page-subtitle">You've reached the end — here's a recap of what you covered today.</p>
+
+  <div class="card">
+    <h2>What you built today</h2>
+    <ul>
+      <li><strong>Module 1 — Networking:</strong> Created a VNet (<code>vnet-userXX</code>) in your dedicated spoke resource group — the private address space and routing foundation for your IaaS workload.</li>
+      <li><strong>Module 2 — Peering:</strong> Connected your spoke to the hub (10.0.0.0/16) via VNet peering — the live, instructor-witnessed step that makes your spoke reachable from shared services.</li>
+      <li><strong>Module 3 — Compute:</strong> Deployed a Windows Server VM with no public IP, attached to your workload subnet, and accessed it securely via hub Azure Bastion.</li>
+    </ul>
+    <p>You also saw how these building blocks fit inside an Azure Landing Zone — spoke VNets peered to a hub, VMs deployed with no direct internet exposure, RBAC isolating each participant's resources, and Azure Policy ready to enforce configuration standards at scale.</p>
+  </div>
+
+  <div class="card">
+    <h2>Your progress today</h2>
+    <ul class="module-status-list" id="module-status-list"></ul>
+  </div>
+
+  <div class="card">
+    <h2>Where to go next</h2>
+    <ul>
+      <li>Work through the <a href="https://learn.microsoft.com/en-us/training/paths/az-104-manage-virtual-networks/" target="_blank" rel="noopener noreferrer">AZ-104 Manage Virtual Networks</a> learning path for deeper coverage of routing, peering, and load balancing.</li>
+      <li>Try the <a href="bonus-storage.html">Bonus — Storage</a> module to create a storage account, configure Blob containers, and explore access tiers.</li>
+      <li>Try provisioning the same resources using <strong>Bicep</strong> or <strong>Terraform</strong> to understand infrastructure-as-code and see why it beats clicking through the portal at scale.</li>
+      <li>Read the <a href="https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/" target="_blank" rel="noopener noreferrer">Azure Landing Zones documentation</a> to understand how the governance and networking patterns you saw today are assembled for a full enterprise estate.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Feedback (optional)</h2>
+    <p>Let your instructor know how the session went. This helps improve future deliveries.</p>
+    <div class="feedback-field">
+      <textarea id="feedback-input" placeholder="What worked well? What could be improved? Any questions we didn't get to?" maxlength="1000"></textarea>
+      <p class="feedback-saved" id="feedback-saved">✓ Feedback saved</p>
+    </div>
+    <button class="btn btn-secondary" id="save-feedback-btn" style="margin-top:0.75rem">Save feedback</button>
+  </div>
+
+  <div class="page-nav">
+    <a href="module3.html" class="btn btn-secondary">← Module 3 — Compute</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderWrapupSummary();
+
+    // Auto-mark wrapup as complete on arrival
+    WorkshopApp.updateModuleStatus('wrapup', 'complete');
+
+    var p = WorkshopApp.loadParticipant();
+    if (p && p.feedback) {
+      document.getElementById('feedback-input').value = p.feedback;
+    }
+
+    document.getElementById('save-feedback-btn').addEventListener('click', function () {
+      WorkshopApp.saveFeedback(document.getElementById('feedback-input').value);
+      var saved = document.getElementById('feedback-saved');
+      if (saved) { saved.style.display = 'block'; setTimeout(function () { saved.style.display = 'none'; }, 2500); }
+    });
+  });
+</script>
+</body>
+</html>

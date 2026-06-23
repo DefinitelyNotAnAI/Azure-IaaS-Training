@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Module 3 — Compute — Azure IaaS Workshop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Fundamentals</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Assignment banner -->
+  <div id="assignment-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your RG:</strong> <span id="banner-rg"></span></span>
+      <span><strong>Your CIDR:</strong> <span id="banner-cidr"></span></span>
+    </div>
+    <a id="banner-portal-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Resource Group →</a>
+  </div>
+
+  <h2 class="page-title">Module 3 — Compute</h2>
+  <p class="page-subtitle">Deploy a Windows Server VM into your spoke VNet — no public IP, accessed only via hub Bastion.</p>
+
+  <div class="card">
+    <h2>What you're about to do</h2>
+    <p>You will deploy a <strong>Windows Server 2022 VM</strong> into the <strong>workload</strong> subnet of your spoke VNet. The VM has no public IP address — access is only via Azure Bastion in the hub, simulating how enterprise IaaS VMs are deployed in production.</p>
+    <ul>
+      <li>Create VM <strong><span id="vm-name-inline"></span></strong> (Standard_B2s, Windows Server 2022).</li>
+      <li>Attach it to your spoke VNet's <strong>workload</strong> subnet.</li>
+      <li>Disable public IP (Bastion-only access).</li>
+      <li>Connect via Azure Bastion and verify network connectivity to the hub.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>How it fits into enterprise Azure</h2>
+    <p>In enterprise Landing Zone deployments, IaaS VMs follow a strict network isolation pattern:</p>
+    <ul>
+      <li><strong>No public IPs on workload VMs</strong> — internet access is routed through the hub Azure Firewall via UDRs. Inbound management access uses Azure Bastion (hub-deployed) over the peering.</li>
+      <li><strong>Availability Zones</strong> spread VMs across physically separate buildings for single-region resilience (set during creation).</li>
+      <li><strong>Managed disks</strong> — Azure manages the physical storage; you choose SKU (Standard_LRS, Premium_LRS, Ultra).</li>
+      <li><strong>VM extensions</strong> (e.g., Azure Monitor Agent, Entra ID login) are deployed via Azure Policy automatically for compliance.</li>
+      <li><strong>Azure Backup</strong> and <strong>Azure Site Recovery</strong> handle point-in-time recovery and cross-region failover.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Lab steps — Create your VM</h2>
+    <ol class="lab-steps">
+      <li>
+        Open the portal link above. Click <strong>+ Create</strong> → <strong>Azure virtual machine</strong>.
+      </li>
+      <li>
+        On <em>Basics</em>:
+        <ul>
+          <li>Resource group: <strong><span id="step-rg"></span></strong></li>
+          <li>VM name: <strong><span id="step-vm-name"></span></strong></li>
+          <li>Region: <strong>East US</strong></li>
+          <li>Availability Zone: <strong>Zone 1</strong></li>
+          <li>Image: <strong>Windows Server 2022 Datacenter — Azure Edition</strong></li>
+          <li>Size: <strong>Standard_B2s</strong> (2 vCPU, 4 GiB)</li>
+          <li>Administrator username: <strong>workshopadmin</strong></li>
+          <li>Password: choose something you'll remember</li>
+        </ul>
+      </li>
+      <li>
+        On <em>Networking</em>:
+        <ul>
+          <li>Virtual network: <strong><span id="step-vnet-name"></span></strong></li>
+          <li>Subnet: <strong>workload</strong></li>
+          <li>Public IP: <strong>None</strong> (clear the default)</li>
+          <li>NIC network security group: <strong>Basic</strong>, allow RDP inbound (Bastion handles transport)</li>
+        </ul>
+      </li>
+      <li>
+        On <em>Management</em>: enable <strong>Microsoft Defender for Cloud — Free</strong> (optional but recommended for the learning experience).
+      </li>
+      <li>
+        Click <strong>Review + Create</strong> → <strong>Create</strong>. Deployment takes 2–4 minutes.
+      </li>
+      <li>
+        Once deployed, open the VM blade and click <strong>Connect</strong> → <strong>Bastion</strong>. Sign in with <strong>workshopadmin</strong> and your password.
+        <div class="callout callout-info" style="margin-top:0.6rem">
+          <strong>Bastion is in the hub</strong>: The hub-vnet must be peered to your spoke (Module 2) before Bastion can reach your VM. If peering is not yet <em>Connected</em>, complete Module 2 first.
+        </div>
+      </li>
+      <li>
+        From the VM command prompt, run <code>ping 10.0.2.1</code> to test connectivity into the hub's shared-services subnet.
+      </li>
+    </ol>
+
+    <a class="link-card" href="https://learn.microsoft.com/en-us/azure/virtual-machines/windows/quick-create-portal" target="_blank" rel="noopener noreferrer">
+      <span class="link-card-icon">📖</span>
+      <div class="link-card-body">
+        <div class="link-card-title">Quickstart: Create a Windows VM in the Azure portal</div>
+        <div class="link-card-desc">Reference walkthrough for creating a Windows Server VM — covers disk, networking, and monitoring settings.</div>
+      </div>
+    </a>
+    <a class="link-card" href="https://learn.microsoft.com/en-us/azure/bastion/bastion-overview" target="_blank" rel="noopener noreferrer">
+      <span class="link-card-icon">🔒</span>
+      <div class="link-card-body">
+        <div class="link-card-title">Azure Bastion — Overview</div>
+        <div class="link-card-desc">How Bastion provides browser-based RDP/SSH without public IPs or VPN clients.</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="callout callout-hold">
+    <strong>⏸ Hold for regroup</strong>
+    After connecting to your VM via Bastion, click <strong>Complete</strong> above. Wait for the instructor to regroup before moving to the Wrap-up.
+  </div>
+
+  <div class="page-nav">
+    <a href="module2.html" class="btn btn-secondary">← Module 2 — Peering</a>
+    <a href="wrapup.html" class="btn btn-primary">Continue to Wrap-up →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderAssignmentBanner();
+    WorkshopApp.renderStatusRow('module3');
+
+    var p    = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+    var rg   = (p && p.assignedRg)   || '<your-rg>';
+
+    ['vm-name-inline', 'step-vm-name'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = 'vm-' + slot;
+    });
+    var rgEl = document.getElementById('step-rg');
+    if (rgEl) rgEl.textContent = rg;
+    var vnetEl = document.getElementById('step-vnet-name');
+    if (vnetEl) vnetEl.textContent = 'vnet-' + slot;
+  });
+</script>
+</body>
+</html>
