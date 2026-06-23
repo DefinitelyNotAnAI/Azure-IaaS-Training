@@ -33,9 +33,9 @@ Run once per subscription. Hub and app infrastructure persist across cohorts.
 
 ```powershell
 az deployment sub create `
-  --location eastus `
+  --location eastus2 `
   --template-file infra/hub.bicep `
-  --parameters location=eastus
+  --parameters location=eastus2
 ```
 
 Creates `hub-rg` with `hub-vnet` (10.0.0.0/16), three subnets:
@@ -50,16 +50,16 @@ Creates `hub-rg` with `hub-vnet` (10.0.0.0/16), three subnets:
 ```powershell
 azd up
 # Select subscription: ME-MngEnvMCAP475636-lerobbi-1
-# Select location: eastus
+# Select location: eastus2
 ```
 
 Alternatively, using Bicep directly:
 
 ```powershell
 az deployment sub create `
-  --location eastus `
+  --location eastus2 `
   --template-file infra/app.bicep `
-  --parameters location=eastus workshopTenantDomain=MngEnvMCAP475636.onmicrosoft.com
+  --parameters location=eastus2 workshopTenantDomain=MngEnvMCAP475636.onmicrosoft.com
 ```
 
 Creates `workshop-app-rg` with:
@@ -124,9 +124,9 @@ For each slot (user01…userXX):
 
 ```powershell
 az deployment sub create `
-  --location eastus `
+  --location eastus2 `
   --template-file infra/spokes.bicep `
-  --parameters location=eastus sessionId="quanta-2026-07-15" slotCount=25
+  --parameters location=eastus2 sessionId="quanta-2026-07-15" slotCount=25
 ```
 
 Creates `user01-rg` … `user25-rg` tagged with `cohort: quanta-2026-07-15`.
