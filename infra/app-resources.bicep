@@ -64,6 +64,22 @@ resource deploymentsContainer 'Microsoft.Storage/storageAccounts/blobServices/co
   properties: { publicAccess: 'None' }
 }
 
+// Pre-create workshop tables
+resource tableSvc 'Microsoft.Storage/storageAccounts/tableServices@2023-05-01' = {
+  parent: storageAccount
+  name: 'default'
+}
+
+resource participantsTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' = {
+  parent: tableSvc
+  name: 'Participants'
+}
+
+resource assignmentsTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' = {
+  parent: tableSvc
+  name: 'Assignments'
+}
+
 // RBAC: UAMI → Storage Table Data Contributor
 resource tableRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, uami.id, '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')
