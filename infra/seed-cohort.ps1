@@ -37,7 +37,8 @@ Connect-MgGraph -TenantId $TenantId `
   -NoWelcome
 
 if (-not $SubscriptionId) {
-  $SubscriptionId = (Get-AzContext).Subscription.Id
+  $SubscriptionId = az account show --query id -o tsv
+  if (-not $SubscriptionId) { throw 'Could not determine subscription ID — run az login first.' }
   Write-Host "  Using subscription: $SubscriptionId" -ForegroundColor Gray
 }
 
@@ -63,12 +64,20 @@ foreach ($slot in $slots) {
   $user = Get-MgUser -Filter "userPrincipalName eq '$upn'" -ErrorAction SilentlyContinue
   if (-not $user) {
     Write-Host "  Creating user $upn" -ForegroundColor Yellow
+    $allChars   = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'
+    $pwdParts   = @(
+      [char]'abcdefghijklmnopqrstuvwxyz'[(Get-Random -Max 26)]
+      [char]'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[(Get-Random -Max 26)]
+      [char]'0123456789'[(Get-Random -Max 10)]
+      [char]'!@#$%^&*'[(Get-Random -Max 8)]
+    ) + (1..12 | ForEach-Object { [char]$allChars[(Get-Random -Max $allChars.Length)] })
+    $genPassword = ($pwdParts | Get-Random -Count $pwdParts.Count) -join ''
     $user = New-MgUser -DisplayName "Workshop $slot" `
       -UserPrincipalName $upn `
       -MailNickname $slot `
       -AccountEnabled `
       -PasswordProfile @{
-        Password                      = [System.Web.Security.Membership]::GeneratePassword(16, 3)
+        Password                      = $genPassword
         ForceChangePasswordNextSignIn = $false
       }
     Write-Host "  ✓ Created user OID: $($user.Id)" -ForegroundColor Green
