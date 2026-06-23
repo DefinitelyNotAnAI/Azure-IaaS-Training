@@ -1,4 +1,3 @@
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Users, Microsoft.Graph.Identity.SignIns
 <#
 .SYNOPSIS
   Seeds a workshop cohort: creates 30 Entra users, assigns RBAC, issues TAPs,
@@ -25,6 +24,11 @@ param(
   [int]   $TapMinutes        = 480
 )
 $ErrorActionPreference = 'Stop'
+
+# Pin to 2.38.0 explicitly — avoids assembly conflict when multiple versions are installed
+Import-Module Microsoft.Graph.Authentication   -RequiredVersion 2.38.0 -Force
+Import-Module Microsoft.Graph.Users            -RequiredVersion 2.38.0 -Force
+Import-Module Microsoft.Graph.Identity.SignIns -RequiredVersion 2.38.0 -Force
 
 # ── Connect ───────────────────────────────────────────────────────────────────
 Write-Host '[seed-cohort] Connecting...' -ForegroundColor Cyan
