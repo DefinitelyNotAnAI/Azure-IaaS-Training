@@ -1,4 +1,3 @@
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Applications
 <#
 .SYNOPSIS
   Idempotent: grants workshop-app-mi the Graph app permissions needed to issue/revoke TAPs.
@@ -15,9 +14,14 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+# Pin to 2.38.0 explicitly — avoids assembly conflict when multiple versions are installed
+Import-Module Microsoft.Graph.Authentication -RequiredVersion 2.38.0 -Force
+Import-Module Microsoft.Graph.Applications   -RequiredVersion 2.38.0 -Force
+
 Write-Host '[grant-graph-permissions] Connecting to Microsoft Graph...' -ForegroundColor Cyan
 Connect-MgGraph -TenantId $TenantId `
   -Scopes 'AppRoleAssignment.ReadWrite.All', 'Application.Read.All' `
+  -UseDeviceCode `
   -NoWelcome
 
 # Find the UAMI service principal
