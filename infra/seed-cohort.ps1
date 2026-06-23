@@ -42,13 +42,8 @@ if (-not $SubscriptionId) {
   Write-Host "  Using subscription: $SubscriptionId" -ForegroundColor Gray
 }
 
-# Get storage key for table writes
-$storageKey = (az storage account keys list `
-  --account-name $StorageAccount `
-  --resource-group $AppRg `
-  --query '[0].value' -o tsv)
-
-if (-not $storageKey) { throw "Could not retrieve storage key for $StorageAccount" }
+# Verify the storage account is reachable (key auth is disabled; uses --auth-mode login)
+Write-Host "  Storage account: $StorageAccount (OAuth auth)" -ForegroundColor Gray
 
 $slots = 1..$SlotCount | ForEach-Object { 'user{0:D2}' -f $_ }
 
@@ -131,7 +126,7 @@ foreach ($slot in $slots) {
   Write-Host "  Writing Assignments table row" -ForegroundColor Yellow
   az storage entity insert `
     --account-name $StorageAccount `
-    --account-key $storageKey `
+    --auth-mode login `
     --table-name Assignments `
     --entity `
       "PartitionKey=$SessionId" `
