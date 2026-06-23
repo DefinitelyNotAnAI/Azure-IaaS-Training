@@ -144,6 +144,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
       ]
     }
   }
+  tags: { 'azd-service-name': 'api', purpose: 'app-infra' }
   dependsOn: [ tableRole, blobRole, deploymentsContainer ]
 }
 
@@ -153,7 +154,7 @@ resource staticWebApp 'Microsoft.Web/staticSites@2023-12-01' = {
   location: location
   sku: { name: 'Standard', tier: 'Standard' }
   properties: {}
-  tags: { purpose: 'app-infra' }
+  tags: { 'azd-service-name': 'web', purpose: 'app-infra' }
 }
 
 resource swaBackend 'Microsoft.Web/staticSites/linkedBackends@2023-12-01' = {
