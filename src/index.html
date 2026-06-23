@@ -72,7 +72,10 @@
         </div>
         <div class="cred-field">
           <span class="cred-label">Portal Username</span>
-          <span class="cred-value" id="cred-upn"></span>
+          <span class="cred-value tap-row">
+            <span id="cred-upn"></span>
+            <button type="button" class="tap-action-btn" id="upn-copy-btn">Copy</button>
+          </span>
         </div>
         <div class="cred-field">
           <span class="cred-label">One-Time Sign-In Code</span>
@@ -283,6 +286,17 @@
         el.dataset.revealed = 'true';
         this.textContent = 'Hide';
       }
+    });
+
+    // ── UPN copy ─────────────────────────────────────────────────────────────
+    document.getElementById('upn-copy-btn').addEventListener('click', function () {
+      var upn = document.getElementById('cred-upn').textContent;
+      if (!upn || upn === '—') return;
+      navigator.clipboard.writeText(upn).then(function () {
+        var btn = document.getElementById('upn-copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+      });
     });
 
     // ── TAP copy ─────────────────────────────────────────────────────────────
