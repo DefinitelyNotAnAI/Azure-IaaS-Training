@@ -7,8 +7,8 @@
   const MODULE_LABELS = {
     onboarding: 'Sign In',
     module1: 'M1 Networking',
-    module2: 'M2 Peering',
-    module3: 'M3 Compute',
+    module2: 'M2 Compute',
+    module3: 'M3 Storage',
   };
   const STATUS_LABELS = {
     not_started:   'Not started',
@@ -31,15 +31,15 @@
   }
 
   async function fetchParticipants() {
-    return apiFetch('/api/admin/participants');
+    return apiFetch('/api/dashboard/participants');
   }
 
   async function fetchAssignments() {
-    return apiFetch('/api/admin/assignments');
+    return apiFetch('/api/dashboard/assignments');
   }
 
   async function preassignSlot(slot, email) {
-    return apiFetch('/api/admin/assignments/' + encodeURIComponent(slot) + '/preassign', {
+    return apiFetch('/api/dashboard/assignments/' + encodeURIComponent(slot) + '/preassign', {
       method: 'POST',
       headers: { 'x-access-code': currentCode, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -47,11 +47,11 @@
   }
 
   async function releaseSlot(slot) {
-    return apiFetch('/api/admin/assignments/' + encodeURIComponent(slot) + '/release', { method: 'POST' });
+    return apiFetch('/api/dashboard/assignments/' + encodeURIComponent(slot) + '/release', { method: 'POST' });
   }
 
   async function rotateTap(slot) {
-    return apiFetch('/api/admin/assignments/' + encodeURIComponent(slot) + '/rotate-tap', { method: 'POST' });
+    return apiFetch('/api/dashboard/assignments/' + encodeURIComponent(slot) + '/rotate-tap', { method: 'POST' });
   }
 
   // ── Utilities ──────────────────────────────────────────────────────────────

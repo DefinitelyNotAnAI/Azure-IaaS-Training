@@ -6,7 +6,7 @@ const { verifyAccessCode } = require('../shared/auth');
 app.http('getAdminAssignments', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'admin/assignments',
+  route: 'dashboard/assignments',
   handler: async (request, context) => {
     if (!verifyAccessCode(request.headers)) {
       return { status: 401, jsonBody: { error: 'Unauthorized' } };

@@ -6,7 +6,7 @@ const { verifyAccessCode } = require('../shared/auth');
 app.http('postAdminAssignmentPreassign', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'admin/assignments/{slot}/preassign',
+  route: 'dashboard/assignments/{slot}/preassign',
   handler: async (request, context) => {
     if (!verifyAccessCode(request.headers)) {
       return { status: 401, jsonBody: { error: 'Unauthorized' } };

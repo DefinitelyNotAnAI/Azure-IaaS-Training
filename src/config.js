@@ -7,7 +7,7 @@ window.APP_CONFIG = {
   // ── Per-delivery fields (edit these for each session) ───────────────────────
   sessionId:   'quanta-2026-06-23',            // Table PartitionKey — change per delivery
   sessionName: 'Quanta Azure IaaS Workshop',
-  sessionDate: 'June 23rd',
+  sessionDate: 'June 25, 2026',
   sessionCode: 'IaaS2026',                     // Shared with participants — rotate per delivery
 
   // ── Module definitions ───────────────────────────────────────────────────────
@@ -22,12 +22,12 @@ window.APP_CONFIG = {
       portalSection: 'virtualnetworks',        // used to build portal deep-links
     },
     module2: {
-      label:         'Module 2 — Peering',
-      portalSection: 'peerings',
+      label:         'Module 2 — Compute',
+      portalSection: 'virtualmachines',
     },
     module3: {
-      label:         'Module 3 — Compute',
-      portalSection: 'virtualmachines',
+      label:         'Module 3 — Storage',
+      portalSection: 'storageaccounts',
     },
     bonus: {
       label:         'Bonus — Storage',

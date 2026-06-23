@@ -7,7 +7,7 @@ const { verifyAccessCode } = require('../shared/auth');
 app.http('postAdminTapRotate', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'admin/assignments/{slot}/rotate-tap',
+  route: 'dashboard/assignments/{slot}/rotate-tap',
   handler: async (request, context) => {
     if (!verifyAccessCode(request.headers)) {
       return { status: 401, jsonBody: { error: 'Unauthorized' } };
