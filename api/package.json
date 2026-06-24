@@ -10,12 +10,11 @@
   },
   "dependencies": {
     "@azure/data-tables": "^13.3.0",
+    "@azure/functions": "^4.6.0",
     "@azure/identity": "^4.4.1",
     "@microsoft/microsoft-graph-client": "^3.0.7"
   },
-  "devDependencies": {
-    "@azure/functions": "^4.6.0"
-  },
+  "devDependencies": {},
   "engines": {
     "node": ">=20.0.0"
   }
