@@ -202,6 +202,12 @@
       if (p && p.assignedRg) {
         populateCredsCard(p, tap);
         showState('creds');
+        // If TAP is missing (new browser session) silently refresh from API
+        if (!tap && p.email) {
+          WorkshopApp.resumeByEmail(p.email).then(function (result) {
+            populateCredsCard(result.participant, result.tempCredential);
+          }).catch(function () { /* non-fatal — user can use the resume form */ });
+        }
       } else {
         showState('form');
       }
