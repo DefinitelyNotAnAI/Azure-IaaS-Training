@@ -27,13 +27,13 @@ This should be simple, reliable, and fast to build.
 ---
 
 ## Workshop delivery assumptions
-The course uses Microsoft Learn content (instructor-hosted lecture + individual labs) instead of a lab in our Azure subscription. **Lab type is mixed by module** (locked decision — see [implementation-plan.md](implementation-plan.md) §1 and §12.1): Networking and Storage are **click-through simulations** (no sign-in, no sandbox, no account), Compute is the only **real-Azure** lab (Learn sandbox + personal MSA), and **watch-along** is the universal fallback.
+The workshop uses **real Azure** — every participant works in their own isolated Azure resource group that is provisioned before the session. Lab type is **real-Azure for all modules** (no Microsoft Learn simulations, no shared sandboxes).
 
 ### Key implications
-- Participants open official Learn units: **simulations** for Networking/Storage (zero prerequisites) and a **Microsoft-managed sandbox subscription** only for the Compute VM lab.
-- The site should provide **context and navigation**, not full exercise instructions.
+- Each participant is assigned a dedicated resource group, a unique VNet CIDR, and a one-time access credential (TAP). These are allocated at check-in via the slot system.
+- The site provides **context, navigation, and lab instructions** pointing participants to the Azure portal link for their assigned resources.
 - The workshop is run live by an instructor with explicit regroup checkpoints.
-- Participant count is uncertain, so the website must scale without manual provisioning.
+- **Watch-along** (`watching_only`) is the fallback for participants without portal access.
 
 ---
 
@@ -89,29 +89,24 @@ Content:
 - optional link to architecture diagram / reference slide
 - “Continue to Networking Module” button
 
-#### 3. Module 1 - Networking
+#### 3. Module 1 — Networking
 Purpose:
-- prepare participants for the networking Learn exercise
+- guide participants through creating their spoke VNet in their assigned resource group
 
 Content blocks:
-- what you are about to do
+- what you are about to do (VNet + subnet in assigned RG, specific CIDR provided)
 - why it matters in enterprise Azure
-- how the sandbox simplifies the real pattern
-- links:
-  - networking Learn module
-  - Azure portal
-  - any quick reference links
-- status controls:
-  - Started
-  - Complete
-  - Need help
-  - Watching only
+- lab steps with Azure portal deep-link
+- status controls: Started / Complete / Need help / Watching only
 
-#### 4. Module 2 - Compute
-Same pattern as Networking, but focused on VM deployment.
+#### 4. Module 2 — Peering
+Same pattern as Networking, but focused on creating a spoke-to-hub VNet peering.
 
-#### 5. Module 3 - Storage
-Same pattern as Networking, but focused on storage account creation.
+#### 5. Module 3 — Compute
+Same pattern as Networking, but focused on VM deployment in the workload subnet.
+
+#### 6. Bonus — Storage (optional, untracked)
+Same pattern as Networking, but focused on creating a storage account in the assigned RG. This module is **not** tracked in participant progress — it is offered as an extension for fast finishers.
 
 #### 6. Governance & Operations Overlay
 Purpose:
@@ -151,10 +146,18 @@ The dashboard should be simple.
 | Lee Robbins | Complete | Started | Not started | Started | 10:42 AM |
 
 ### Recommended dashboard controls
-- refresh
+- refresh / auto-refresh toggle
 - filter by status
 - filter by module
-- “show only need help” toggle
+- "show only need help" toggle
+
+### Actual implemented controls (as built)
+The admin dashboard includes:
+- **Cohort Readiness gauge** — percentage of participants who have completed all tracked modules
+- **Module Status summary** — per-module counts (not started / started / complete / need help / watching only)
+- **Participants tab** — table with per-participant module status, filters, auto-refresh
+- **Slot Pool tab** — view and manage slot assignments; see which slots are claimed vs. available
+- **TAP rotation** — trigger a TAP rotation for one or all participants from the dashboard
 
 ### Nice-to-have (optional)
 - total participants checked in
@@ -171,18 +174,25 @@ Use a lightweight backend with one primary participant record.
 {
   "email": "lee.robbins@contoso.com",
   "displayName": "Lee Robbins",
+  "participantId": "<uuid>",
+  "assignedSlot": "user01",
+  "assignedRg": "user01-rg",
+  "assignedCidr": "10.1.1.0/24",
+  "assignedUpn": "user01@contoso.onmicrosoft.com",
+  "tapIssuedAt": "2026-06-25T09:00:00Z",
+  "portalSignedInAt": "2026-06-25T09:05:00Z",
   "moduleStatuses": {
-    "welcome": "complete",
+    "onboarding": "complete",
     "module1": "complete",
     "module2": "started",
     "module3": "not_started",
     "wrapup": "not_started"
   },
-  "currentModule": "module2",
-  "currentStatus": "started",
-  "lastUpdated": "2026-06-12T10:42:00-04:00"
+  "lastUpdated": "2026-06-25T10:42:00Z"
 }
 ```
+
+> **Slot system:** At check-in, a participant is assigned a pre-provisioned slot (`user01`–`user30`). Each slot has a dedicated resource group, VNet CIDR, and Entra ID user with a temporary access pass (TAP). The TAP is rotated on a timer and expires automatically. The slot assignment persists for the duration of the session; the participant uses their assigned Entra UPN and TAP to sign into the portal.
 
 ### Status values
 Use a constrained set:
@@ -216,7 +226,9 @@ Keep the stack simple.
 Use the stack you can ship quickly and trust during a live event.
 Prioritize reliability over elegance.
 
-> **Locked decision (see [implementation-plan.md](implementation-plan.md) §1–§2 for the authoritative detail):** plain static HTML/CSS/JS on **Azure Static Web Apps (Standard)**, with the API as a **standalone Azure Functions app (Flex Consumption) linked to SWA** and data in **Azure Table Storage**. The Functions app uses **managed identity** for storage (no connection string), **always-ready instances** to avoid cold starts during the event, and App Insights. Linking the backend keeps same-origin `/api/*` routing, so there is **no CORS** to configure. This choice favors stability and scalability over the convenience of SWA's built-in managed functions.
+> **Locked decision (see [implementation-plan.md](implementation-plan.md) §1–2 for the authoritative detail):** plain static HTML/CSS/JS on **Azure Static Web Apps (Standard)**, with the API as a **standalone Azure Functions app (Flex Consumption) linked to SWA** and data in **Azure Table Storage** (`Participants` + `Assignments` tables). The Functions app uses **managed identity** for storage (no connection string), **always-ready instances** to avoid cold starts during the event, and App Insights. Linking the backend keeps same-origin `/api/*` routing, so there is **no CORS** to configure.
+>
+> The lab environment is **real Azure with per-participant isolation**: each participant is assigned a dedicated resource group, a unique VNet CIDR, and an Entra ID user with a one-time Temporary Access Pass (TAP). Slots are claimed at check-in; TAPs are rotated by a timer function. There are no Microsoft Learn simulations or shared sandboxes.
 
 ---
 

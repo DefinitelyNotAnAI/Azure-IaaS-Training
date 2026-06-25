@@ -1,5 +1,20 @@
 # Azure IaaS Fundamentals — Implementation Plan
 
+> **⚠️ As-built deviations from this plan**
+>
+> This document records design decisions made at the start of the build. The delivered app differs from these decisions in several significant ways. Key deviations:
+>
+> | Area | Plan says | As built |
+> |------|-----------|----------|
+> | Module sequence | M1 Networking, M2 **Compute**, M3 **Storage** | M1 Networking, M2 **Peering**, M3 **Compute**, Storage = optional Bonus |
+> | Lab environment | Networking/Storage = click-through simulations; Compute = Learn sandbox (personal MSA) | **Real Azure for all modules** — each participant gets a pre-assigned resource group, unique VNet CIDR, and Entra ID user with a Temporary Access Pass (TAP). No Learn simulations; no shared sandbox. |
+> | Tracked module statuses | `welcome`, module1, module2, module3, wrapup | **`onboarding`**, module1, module2, module3, wrapup |
+> | Participant data model | email, displayName, moduleStatuses, currentModule, currentStatus, lastUpdated | + `participantId`, `assignedSlot`, `assignedRg`, `assignedCidr`, `assignedUpn`, `tapIssuedAt`, `portalSignedInAt` |
+> | API surface | 4 functions (POST/GET participant, PATCH participant, GET admin participants) | 10 functions — the above plus slot assignment management, TAP rotation, and a timer function for stale TAP cleanup (`Assignments` table added) |
+> | Hub peering RBAC | Not specified | Custom role *Workshop Hub Peering* (`peer/action` + `virtualNetworkPeerings` read/write/delete on hub-vnet); participants create both peering sides via the portal's combined form |
+>
+> For the current authoritative description of the app see [website-plan.md](website-plan.md), [ops-runbook.md](ops-runbook.md), the instructor scripts, and the source code.
+
 > Companion to [website-plan.md](website-plan.md). That document defines **what** to build; this one defines **how** and **in what order**. The success condition stays the same: *participants know where to go, the instructor knows where they are, and the live workshop stays organized.*
 
 > **App naming:** the app is intentionally generic (**Azure IaaS Fundamentals**) and reusable across audiences. The only place a customer/session name appears is the **Session Information** block on the welcome page, driven by configurable values in `config.js` (e.g. `sessionName: "Contoso Azure Workshop"`, `sessionDate: "January 1st, 10:00 am"`).
