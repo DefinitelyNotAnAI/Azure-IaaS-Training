@@ -60,6 +60,7 @@ app.http('getParticipant', {
       status: 200,
       jsonBody: {
         participantId:  participant.participantId,
+        email:          participant.rowKey,
         displayName:    participant.displayName,
         assignedSlot:   assignment.rowKey,
         assignedRg:     assignment.assignedRg,

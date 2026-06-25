@@ -38,11 +38,11 @@
   <div class="card">
     <h2>What you're about to do</h2>
     <p>You will create the <strong>spoke-side VNet peering</strong> that connects your spoke (<code id="spoke-vnet-name"></code>, <code id="spoke-cidr"></code>) to the hub VNet (<strong>hub-vnet</strong>, 10.0.0.0/16).</p>
-    <p>After you create the spoke-side peering, the instructor will run <code>peer-hub.ps1</code> to create the matching hub-side peering. Once both sides are <em>Connected</em>, traffic can flow between your spoke and the hub.</p>
+    <p>You have been granted a narrow custom role (<strong>Workshop Hub Peering</strong>) on hub-vnet, so the portal's <em>Add peering</em> form will create <strong>both</strong> sides of the peering in one step. Once both sides are <em>Connected</em>, traffic can flow between your spoke and the hub.</p>
     <ul>
       <li>Add peering <strong><span id="peering-name"></span></strong> on your spoke, pointed at hub-vnet.</li>
       <li>Leave all access settings at their defaults — only the two <em>Allow access</em> checkboxes need to be checked.</li>
-      <li>Verify peering status reaches <em>Connected</em> after the hub side is added.</li>
+      <li>Verify peering status reaches <em>Connected</em> (the form creates both the spoke and hub sides).</li>
     </ul>
   </div>
 
@@ -52,7 +52,7 @@
     <ul>
       <li><strong>Non-transitive by default</strong> — traffic between two spokes doesn't traverse the hub unless routed through the hub firewall via UDRs.</li>
       <li><strong>Low latency, high throughput</strong> — peering traffic stays on the Microsoft backbone and doesn't traverse a VPN gateway.</li>
-      <li><strong>Both sides required</strong> — Azure requires a peering resource on each VNet. The platform team (instructor) manages the hub side; you manage the spoke side.</li>
+      <li><strong>Both sides required</strong> — Azure requires a peering resource on each VNet. In production the platform team owns the hub side; in this lab a narrow delegated role lets you create both sides from one form.</li>
       <li><strong>Use remote gateway</strong> — if the hub has a VPN or ExpressRoute gateway, spokes can use it for on-premises connectivity instead of deploying their own.</li>
     </ul>
   </div>
@@ -84,13 +84,10 @@
         </ul>
       </li>
       <li>
-        Click <strong>Add</strong>. The peering will show <em>Initiated</em> until the instructor adds the hub side.
+        Click <strong>Add</strong>. The portal creates both the spoke and hub sides of the peering; status should reach <strong>Connected</strong> within a minute or two (refresh the Peerings blade).
       </li>
       <li>
-        Raise your hand or message in the group chat to let the instructor know you're ready for the hub-side peering.
-      </li>
-      <li>
-        Once the instructor runs <code>peer-hub.ps1</code>, refresh the Peerings blade. Status should change to <strong>Connected</strong>.
+        If the status stays <em>Initiated</em> or you hit a permissions error, raise your hand or message in the group chat — the instructor can run <code>peer-hub.ps1</code> to create the hub side as a fallback.
       </li>
     </ol>
 

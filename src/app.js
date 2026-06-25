@@ -96,7 +96,7 @@
     }
 
     const data = await res.json();
-    return _applyServerResponse(data);
+    return _applyServerResponse(data, normalizedEmail);
   }
 
   async function resumeByEmail(email) {
@@ -117,13 +117,13 @@
     }
 
     const data = await res.json();
-    return _applyServerResponse(data);
+    return _applyServerResponse(data, normalizedEmail);
   }
 
-  function _applyServerResponse(data) {
+  function _applyServerResponse(data, fallbackEmail) {
     const existing = loadParticipant();
     const participant = Object.assign(existing || {}, {
-      email:          data.email || (existing && existing.email) || '',
+      email:          data.email || fallbackEmail || (existing && existing.email) || '',
       displayName:    data.displayName,
       participantId:  data.participantId,
       assignedSlot:   data.assignedSlot,
@@ -159,6 +159,7 @@
     renderStatusRow(moduleKey);
     renderProgressBar();
 
+    if (!p.email) { console.warn('[workshop] status not synced: participant email missing'); return; }
     fetch('/api/participants/' + encodeURIComponent(p.email), {
       method: 'PATCH',
       headers: apiHeaders(),

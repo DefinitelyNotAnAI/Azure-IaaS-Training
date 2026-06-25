@@ -113,6 +113,7 @@ function buildResponse(participant, assignment) {
 
   return {
     participantId:  participant.participantId,
+    email:          participant.rowKey,
     displayName:    participant.displayName,
     assignedSlot:   assignment.rowKey,
     assignedRg:     assignment.assignedRg,

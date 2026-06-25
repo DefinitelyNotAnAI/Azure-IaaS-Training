@@ -104,10 +104,12 @@ foreach ($slot in $slots) {
     Write-Host "  ✓ Reader already assigned" -ForegroundColor Green
   }
 
-  # ── RBAC: Workshop Hub Peering (peer/action only) on hub-vnet ─────────────
-  # Allows participants to create VNet peerings to hub-vnet from the portal
-  # without full Network Contributor on hub-rg. Custom role must exist first
-  # (created by fix-hub-peering-rbac.ps1 or manually).
+  # ── RBAC: Workshop Hub Peering on hub-vnet ────────────────────────────────
+  # Allows participants to create both sides of a spoke<->hub VNet peering
+  # from the portal's "Add peering" form without Contributor on hub-vnet.
+  # Custom role must exist first (created/updated by fix-hub-peering-rbac.ps1).
+  # The role grants peer/action + virtualNetworkPeerings read/write/delete on
+  # hub-vnet only — it cannot modify the hub VNet itself.
   $hubVnetScope = "/subscriptions/$SubscriptionId/resourceGroups/$HubRg/providers/Microsoft.Network/virtualNetworks/hub-vnet"
   $existingPeer = az role assignment list --assignee $user.Id --role 'Workshop Hub Peering' --scope $hubVnetScope --query '[0].id' -o tsv 2>$null
   if (-not $existingPeer) {
