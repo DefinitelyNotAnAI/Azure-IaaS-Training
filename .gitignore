@@ -1,0 +1,27 @@
+# Functions local settings — may contain secrets, never commit
+api/local.settings.json
+.env
+*.local.*
+
+# Node
+node_modules/
+api/node_modules/
+
+# SWA CLI output
+.swa/
+
+# Azure Developer CLI environments
+.azure/
+
+# Workshop capture screenshots (may contain tenant/customer-identifying portal data)
+docs/caps/
+
+# Generated instructor-script PDFs (regenerate locally with pandoc; avoid stale customer content)
+docs/*.pdf
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled Bicep output
+infra/*.json

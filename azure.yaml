@@ -1,0 +1,28 @@
+# azure.yaml — Azure Developer CLI (azd) configuration
+# Manages the workshop-app-rg resources only.
+# Hub and spoke infrastructure is managed separately via infra/hub.bicep,
+# infra/spokes.bicep, and the PowerShell scripts in infra/.
+
+name: azure-iaas-training
+metadata:
+  template: azure-iaas-training@0.0.1
+
+# Target subscription / location are set interactively on first `azd up`
+# or via environment variables:
+#   AZURE_SUBSCRIPTION_ID, AZURE_LOCATION
+
+services:
+  api:
+    project: ./api
+    language: js
+    host: function
+
+  web:
+    project: ./src
+    dist: "."
+    host: staticwebapp
+
+infra:
+  provider: bicep
+  path: infra
+  module: app          # entry point: infra/app.bicep (subscription-scoped)

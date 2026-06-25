@@ -1,0 +1,21 @@
+{
+  "name": "workshop-api",
+  "version": "1.0.0",
+  "description": "Azure IaaS Workshop facilitator API — Azure Functions v4 Node 20",
+  "main": "src/functions/index.js",
+  "scripts": {
+    "start": "func start",
+    "build": "echo 'No build step'",
+    "test": "echo 'No tests yet'"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.0",
+    "@azure/functions": "^4.6.0",
+    "@azure/identity": "^4.4.1",
+    "@microsoft/microsoft-graph-client": "^3.0.7"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

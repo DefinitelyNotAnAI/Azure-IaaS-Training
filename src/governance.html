@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Governance &amp; Operations — Azure IaaS Workshop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Fundamentals</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <h2 class="page-title">Governance &amp; Operations Overlay</h2>
+  <p class="page-subtitle">Instructor-led discussion — how enterprise controls wrap around the IaaS resources you just built.</p>
+
+  <div class="card">
+    <h2>From individual resources to managed workloads</h2>
+    <p>In the three labs today you created each IaaS resource in isolation. In a production environment, those same resources sit inside a layer of governance and operational tooling that enforces consistency, security, and cost control automatically — without touching each resource individually. This section is your instructor's walkthrough of that overlay.</p>
+  </div>
+
+  <div class="card">
+    <h2>Azure Policy — enforce configuration at scale</h2>
+    <p>Azure Policy lets you define and enforce rules across your entire estate using three effect types:</p>
+    <ul>
+      <li><strong>Deny</strong> — blocks non-compliant deployments before they are created (e.g. no public IPs on VMs, only approved regions, minimum TLS version on storage).</li>
+      <li><strong>Audit</strong> — flags non-compliant resources for review without blocking them — useful for discovering drift without disrupting existing workloads.</li>
+      <li><strong>DeployIfNotExists / Modify</strong> — automatically remediates non-compliant configurations (e.g. install the Azure Monitor agent on every new VM, enable diagnostic settings on storage accounts).</li>
+    </ul>
+    <p><strong>Policy initiatives</strong> group related policies into a single assignment — common examples include the Microsoft Cloud Security Benchmark and custom regulatory baselines assigned at the management group level so every subscription inherits them.</p>
+  </div>
+
+  <div class="card">
+    <h2>Cost management &amp; tagging</h2>
+    <p>Every resource you create should carry metadata that enables accurate showback and chargeback across business units:</p>
+    <ul>
+      <li><strong>Required tags</strong> (enforced by Policy at creation time): environment, cost centre, workload owner, application name. Non-compliant resources are denied or auto-tagged.</li>
+      <li><strong>Azure Cost Management</strong>: filter actual spend by tag to generate per-workload or per-team cost reports; set budgets with email or action-group alerts when thresholds are crossed.</li>
+      <li><strong>Azure Advisor</strong>: surfaces idle VMs, under-used disks, unattached public IPs, and reserved-instance savings opportunities — a free, automated cost and performance review.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Monitoring &amp; security posture</h2>
+    <ul>
+      <li><strong>Azure Monitor + VM Insights</strong>: CPU, memory, disk throughput, and network metrics without manual configuration on supported images; dependency maps show running processes and cross-VM network connections.</li>
+      <li><strong>Log Analytics workspace</strong>: centralised log aggregation — Windows Event logs, Linux syslog, NSG flow logs, and activity logs all shipped to a single queryable store using KQL.</li>
+      <li><strong>Microsoft Defender for Cloud</strong>: unified security posture score across the IaaS estate; actionable recommendations for exposed management ports (RDP/SSH), missing OS patches, unencrypted disks, and misconfigured NSGs.</li>
+      <li><strong>Microsoft Sentinel</strong> (optional): SIEM and SOAR that ingests Azure Activity logs, sign-in logs, and VM security events for threat detection, hunting, and automated incident response.</li>
+    </ul>
+  </div>
+
+  <div class="page-nav">
+    <a href="module3.html" class="btn btn-secondary">← Module 3 — Compute</a>
+    <a href="wrapup.html" class="btn btn-primary">Continue to Wrap-up →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+  });
+</script>
+</body>
+</html>

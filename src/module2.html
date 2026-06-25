@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Module 2 — Peering — Azure IaaS Workshop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Fundamentals</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Assignment banner -->
+  <div id="assignment-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your RG:</strong> <span id="banner-rg"></span></span>
+      <span><strong>Your CIDR:</strong> <span id="banner-cidr"></span></span>
+      <span><strong>Hub CIDR:</strong> 10.0.0.0/16</span>
+    </div>
+    <a id="banner-portal-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Resource Group →</a>
+  </div>
+
+  <h2 class="page-title">Module 2 — VNet Peering</h2>
+  <p class="page-subtitle">Connect your spoke VNet to the hub, enabling cross-spoke traffic inspection and shared services.</p>
+
+  <div class="card">
+    <h2>What you're about to do</h2>
+    <p>You will create the <strong>spoke-side VNet peering</strong> that connects your spoke (<code id="spoke-vnet-name"></code>, <code id="spoke-cidr"></code>) to the hub VNet (<strong>hub-vnet</strong>, 10.0.0.0/16).</p>
+    <p>After you create the spoke-side peering, the instructor will run <code>peer-hub.ps1</code> to create the matching hub-side peering. Once both sides are <em>Connected</em>, traffic can flow between your spoke and the hub.</p>
+    <ul>
+      <li>Add peering <strong><span id="peering-name"></span></strong> on your spoke, pointed at hub-vnet.</li>
+      <li>Leave all access settings at their defaults — only the two <em>Allow access</em> checkboxes need to be checked.</li>
+      <li>Verify peering status reaches <em>Connected</em> after the hub side is added.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>How it fits into enterprise Azure</h2>
+    <p>VNet peering is the standard connectivity mechanism between spoke and hub in an Azure Landing Zone:</p>
+    <ul>
+      <li><strong>Non-transitive by default</strong> — traffic between two spokes doesn't traverse the hub unless routed through the hub firewall via UDRs.</li>
+      <li><strong>Low latency, high throughput</strong> — peering traffic stays on the Microsoft backbone and doesn't traverse a VPN gateway.</li>
+      <li><strong>Both sides required</strong> — Azure requires a peering resource on each VNet. The platform team (instructor) manages the hub side; you manage the spoke side.</li>
+      <li><strong>Use remote gateway</strong> — if the hub has a VPN or ExpressRoute gateway, spokes can use it for on-premises connectivity instead of deploying their own.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Lab steps — Create the spoke-side peering</h2>
+    <ol class="lab-steps">
+      <li>
+        Open the portal link in the banner above and navigate to your VNet (<strong><span id="step-vnet-name"></span></strong>).
+      </li>
+      <li>
+        In the left menu, select <strong>Peerings</strong> under <em>Settings</em>, then click <strong>+ Add</strong>.
+      </li>
+      <li>
+        The form has two sections. Fill in the <em>Remote virtual network summary</em> section first (this configures the hub side of the peering):
+        <ul>
+          <li>Peering link name: <strong><span id="step-hub-peering-name"></span></strong> — the instructor will see this name on hub-vnet</li>
+          <li>Peering type: <strong>Virtual network</strong></li>
+          <li>Subscription: your workshop subscription</li>
+          <li>Virtual network: <strong>hub-vnet (hub-rg)</strong> — you have Reader access so it appears in the picker</li>
+          <li>Leave all <em>Remote virtual network peering settings</em> at their defaults — only <em>Allow hub-vnet to access your spoke</em> should be checked</li>
+        </ul>
+      </li>
+      <li>
+        Fill in the <em>Local virtual network summary</em> section (this configures your spoke side):
+        <ul>
+          <li>Peering link name: <strong><span id="step-peering-name"></span></strong></li>
+          <li>Leave all <em>Local virtual network peering settings</em> at their defaults — only <em>Allow your spoke to access hub-vnet</em> should be checked</li>
+        </ul>
+      </li>
+      <li>
+        Click <strong>Add</strong>. The peering will show <em>Initiated</em> until the instructor adds the hub side.
+      </li>
+      <li>
+        Raise your hand or message in the group chat to let the instructor know you're ready for the hub-side peering.
+      </li>
+      <li>
+        Once the instructor runs <code>peer-hub.ps1</code>, refresh the Peerings blade. Status should change to <strong>Connected</strong>.
+      </li>
+    </ol>
+
+    <a class="link-card" href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview" target="_blank" rel="noopener noreferrer">
+      <span class="link-card-icon">📖</span>
+      <div class="link-card-body">
+        <div class="link-card-title">VNet peering — Overview</div>
+        <div class="link-card-desc">Architecture, requirements, and constraints for Azure Virtual Network peering.</div>
+      </div>
+    </a>
+    <a class="link-card" href="https://learn.microsoft.com/en-us/azure/architecture/networking/architecture/hub-spoke" target="_blank" rel="noopener noreferrer">
+      <span class="link-card-icon">🏗️</span>
+      <div class="link-card-body">
+        <div class="link-card-title">Hub-spoke network topology in Azure</div>
+        <div class="link-card-desc">Reference architecture for hub-spoke networking, peering design, and shared services placement.</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="callout callout-hold">
+    <strong>⏸ Hold for regroup</strong>
+    After your peering shows <em>Connected</em>, click <strong>Complete</strong> above. Wait for the instructor to regroup before moving to Module 3.
+  </div>
+
+  <div class="page-nav">
+    <a href="module1.html" class="btn btn-secondary">← Module 1 — Networking</a>
+    <a href="module3.html" class="btn btn-primary">Continue to Module 3 — Compute →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderAssignmentBanner();
+    WorkshopApp.renderStatusRow('module2');
+
+    var p    = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+    var cidr = (p && p.assignedCidr) || '10.10.X.0/24';
+
+    ['spoke-vnet-name', 'step-vnet-name'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = 'vnet-' + slot;
+    });
+    document.getElementById('spoke-cidr').textContent = cidr;
+    ['peering-name', 'step-peering-name'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = slot + '-to-hub';
+    });
+    document.getElementById('step-hub-peering-name').textContent = 'hub-to-' + slot;
+  });
+</script>
+</body>
+</html>
