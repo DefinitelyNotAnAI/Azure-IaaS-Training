@@ -100,7 +100,7 @@ azd deploy api --environment <AZD_ENV>
 
 ### Module 2: participants get "does not have permission to peer" error
 
-**Root cause:** The `Workshop Hub Peering` custom role (which grants only `peer/action` on hub-vnet) was not assigned to participants — either the role didn't exist yet when `seed-cohort.ps1` ran, or it was a cohort provisioned before this fix.
+**Root cause:** The `Workshop Hub Peering` custom role (which grants `peer/action` plus `virtualNetworkPeerings` read/write/delete on hub-vnet) was not assigned to participants — either the role didn't exist yet when `seed-cohort.ps1` ran, or it was a cohort provisioned before `fix-hub-peering-rbac.ps1` was run.
 
 **Fix:**
 

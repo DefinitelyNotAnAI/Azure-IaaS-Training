@@ -106,11 +106,14 @@ Wait until the admin dashboard shows all rows as **M1 Networking = ✓** (or mos
 
 ## Instructor actions for Module 2 prep
 
-While participants read through the Module 2 intro, run `peer-hub.ps1` in the background for each participant after they create their spoke-side peering. The script creates the hub-to-spoke peering for all slots:
+No instructor action required during normal flow. Participants now hold the *Workshop Hub Peering* custom role on hub-vnet, which grants `peer/action` plus `virtualNetworkPeerings` read/write/delete — enough for the portal's combined **Add peering** form to create **both** the spoke→hub and hub→spoke links in one step. Peerings should reach **Connected** without you touching `peer-hub.ps1`.
+
+`peer-hub.ps1` is available as a fallback only if a participant hits a permission error or their peering gets stuck in **Initiated**:
 
 ```powershell
 cd C:\Repos\Azure-IaaS-Training
-.\infra\peer-hub.ps1
+.\infra\peer-hub.ps1 -SessionId <SESSION_ID>              # all slots
+.\infra\peer-hub.ps1 -SessionId <SESSION_ID> -Slot user07  # single straggler
 ```
 
-*(You'll run this reactively in Module 2 — see Module 2 script.)*
+*(See Module 2 script for troubleshooting guidance.)*

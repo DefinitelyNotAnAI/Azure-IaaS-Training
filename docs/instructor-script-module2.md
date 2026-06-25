@@ -28,7 +28,7 @@
 
 > "This is the part that trips people up. Azure VNet peering requires a peering resource on **both** VNets. You can only create a peering on VNets you have write access to.
 >
-> "The platform team normally controls hub-side peering changes — and in a real enterprise, you wouldn't have write access to the hub at all. For this workshop we've given you a narrow permission — the `peer/action` action only, scoped to hub-vnet — so you can complete the connection yourselves. This mirrors how a self-service landing zone portal would work.
+> "The platform team normally controls hub-side peering changes — and in a real enterprise, you wouldn't have write access to the hub at all. For this workshop we've given you a narrow set of permissions on hub-vnet — `Microsoft.Network/virtualNetworks/peer/action` plus read, write, and delete on the peering child resources (`virtualNetworkPeerings`) — so you can complete the connection yourselves. Crucially, this does **not** let you modify the hub VNet itself (subnets, address space, etc.), only its peering links. This mirrors how a self-service landing zone portal would work.
 >
 > The portal creates both sides in one shot. After you click Add, status should jump straight to **Connected**."
 
@@ -76,7 +76,7 @@
 
 ## Instructor: monitoring (no action needed in normal flow)
 
-Participants now have `peer/action` on hub-vnet via the *Workshop Hub Peering* custom role, so both peering sides are created together when they click Add. Watch the admin dashboard — the M2 Peering column should light up as participants click Complete.
+Participants now have the *Workshop Hub Peering* custom role on hub-vnet (`peer/action` plus `virtualNetworkPeerings` read/write/delete), so both peering sides are created together when they click Add. Watch the admin dashboard — the M2 Peering column should light up as participants click Complete.
 
 If any participant reports a permission error ("does not have permission to perform peer/action"):
 
