@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Single-file self-contained publish: zero-dependency install on Windows VMs -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>legacy-system</AssemblyName>
+    <RootNamespace>LegacySystem</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.*" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.*" />
+  </ItemGroup>
+
+  <!--
+    scenario.json is NOT bundled into the single-file exe — it is copied to the
+    publish output directory so facilitators can update the chaos timeline without
+    rebuilding.  The install script copies it to C:\legacy-system\ alongside the exe.
+  -->
+  <ItemGroup>
+    <Content Include="scenario.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
+</Project>

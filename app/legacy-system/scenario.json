@@ -1,0 +1,29 @@
+{
+  "incidentId": "INC-BADDEPLOYMENT-01",
+  "events": [
+    {
+      "offsetMinutes": 20,
+      "durationMinutes": 15,
+      "type": "LatencySpike",
+      "service": "OrderService",
+      "operation": "ProcessOrder",
+      "latencyMultiplier": 4.0,
+      "errorRateMultiplier": 3.0,
+      "generateTickets": true,
+      "ticketDelayMinutes": 3,
+      "description": "Planted root cause: a simulated bad config deploy increased OrderService timeout from 500ms to 2000ms, causing cascading latency. Telemetry shows the anomaly clearly; tickets appear ~3 min later — an early-warning window the agent can detect."
+    },
+    {
+      "offsetMinutes": 50,
+      "durationMinutes": 6,
+      "type": "BlindSpot",
+      "service": "PaymentService",
+      "operation": "ValidateCard",
+      "latencyMultiplier": 1.0,
+      "errorRateMultiplier": 0.0,
+      "generateTickets": true,
+      "ticketDelayMinutes": 0,
+      "description": "Perception blind spot: a frontend-side timeout misconfiguration causes user-visible errors that are not reflected in backend telemetry. Tickets arrive but no anomaly is recorded — the agent's blind-spot query should surface this."
+    }
+  ]
+}
