@@ -17,6 +17,11 @@ services:
     language: js
     host: function
 
+  ingest-api:
+    project: ./api-ingest
+    language: js
+    host: function
+
   web:
     project: ./src
     dist: "."
@@ -26,3 +31,9 @@ infra:
   provider: bicep
   path: infra
   module: app          # entry point: infra/app.bicep (subscription-scoped)
+
+hooks:
+  postprovision:
+    shell: pwsh
+    run: ./infra/data-layer/setup-fabric.ps1
+    interactive: true

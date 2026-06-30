@@ -20,12 +20,19 @@ param sessionCode string = 'CHANGE-ME-PER-DELIVERY'
 @description('Admin dashboard access code')
 param adminAccessCode string = 'CHANGE-ME-BEFORE-WORKSHOP'
 
-var appRgName = 'workshop-app-rg'
+var appRgName  = 'workshop-app-rg'
+var dataRgName = 'workshop-data-rg'
 
 resource appRg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   name: appRgName
   location: location
   tags: { purpose: 'app-infra' }
+}
+
+resource dataRg 'Microsoft.Resources/resourceGroups@2023-07-01' = {
+  name: dataRgName
+  location: location
+  tags: { purpose: 'data-layer' }
 }
 
 module appResources 'app-resources.bicep' = {
@@ -42,8 +49,22 @@ module appResources 'app-resources.bicep' = {
   }
 }
 
+module dataResources 'data-layer/data-layer-resources.bicep' = {
+  name: 'data-layer-resources'
+  scope: dataRg
+  params: {
+    location: location
+    uniqueSuffix: uniqueSuffix
+  }
+}
+
 output functionAppName string = appResources.outputs.functionAppName
 output swaDefaultHostname string = appResources.outputs.swaDefaultHostname
 output storageAccountName string = appResources.outputs.storageAccountName
 output uamiPrincipalId string = appResources.outputs.uamiPrincipalId
 output uamiClientId string = appResources.outputs.uamiClientId
+
+// Data-layer outputs (consumed by setup-fabric.ps1 postprovision hook)
+output ingestFunctionAppName string = dataResources.outputs.ingestFunctionAppName
+output ingestFunctionAppUrl string = dataResources.outputs.ingestFunctionAppUrl
+output ingestEventHubNamespace string = dataResources.outputs.eventHubNamespaceHostname

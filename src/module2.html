@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Module 2 — Peering — Azure IaaS Workshop</title>
+  <title>Module 2 — Peering (Instructor Demo) — Azure IaaS Hackathon</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -33,16 +33,20 @@
   </div>
 
   <h2 class="page-title">Module 2 — VNet Peering</h2>
-  <p class="page-subtitle">Connect your spoke VNet to the hub, enabling cross-spoke traffic inspection and shared services.</p>
+  <p class="page-subtitle">Watch the instructor demonstrate spoke-to-hub VNet peering — a core Azure Landing Zone pattern.</p>
+
+  <div class="callout callout-info">
+    <strong>🎓 Instructor Demo</strong> — This module is facilitator-led. The instructor will demonstrate peering live using <code>peer-hub.ps1</code> and the Azure portal. You don't need to take any action — follow along to understand the concept.
+  </div>
 
   <div class="card">
-    <h2>What you're about to do</h2>
-    <p>You will create the <strong>spoke-side VNet peering</strong> that connects your spoke (<code id="spoke-vnet-name"></code>, <code id="spoke-cidr"></code>) to the hub VNet (<strong>hub-vnet</strong>, 10.0.0.0/16).</p>
-    <p>You have been granted a narrow custom role (<strong>Workshop Hub Peering</strong>) on hub-vnet, so the portal's <em>Add peering</em> form will create <strong>both</strong> sides of the peering in one step. Once both sides are <em>Connected</em>, traffic can flow between your spoke and the hub.</p>
+    <h2>What you'll observe</h2>
+    <p>The instructor will create the peering that connects your spoke VNet (<code id="spoke-vnet-name"></code>, <code id="spoke-cidr"></code>) to the hub VNet (<strong>hub-vnet</strong>, 10.0.0.0/16).</p>
+    <p>Once peering reaches <em>Connected</em>, your spoke can reach the Azure Bastion in the hub — useful for Module 3 VM access. Note that <strong>peering is not required for the hackathon app to function</strong>: the legacy support app emits telemetry and support signals outbound over HTTPS, which works independently of hub connectivity.</p>
     <ul>
-      <li>Add peering <strong><span id="peering-name"></span></strong> on your spoke, pointed at hub-vnet.</li>
-      <li>Leave all access settings at their defaults — only the two <em>Allow access</em> checkboxes need to be checked.</li>
-      <li>Verify peering status reaches <em>Connected</em> (the form creates both the spoke and hub sides).</li>
+      <li>The facilitator runs <code>peer-hub.ps1</code> to create the hub side of the peering for all spokes.</li>
+      <li>Each spoke's peering name will be <strong><span id="peering-name"></span></strong> (spoke side) and <strong><span id="step-hub-peering-name"></span></strong> (hub side).</li>
+      <li>Peering status should reach <strong>Connected</strong> within a minute after both sides are created.</li>
     </ul>
   </div>
 
@@ -58,38 +62,24 @@
   </div>
 
   <div class="card">
-    <h2>Lab steps — Create the spoke-side peering</h2>
+    <h2>What the instructor demonstrates</h2>
     <ol class="lab-steps">
       <li>
-        Open the portal link in the banner above and navigate to your VNet (<strong><span id="step-vnet-name"></span></strong>).
+        The facilitator navigates to <strong>hub-vnet</strong> in the Azure portal and shows the Peerings blade (currently empty or partial).
       </li>
       <li>
-        In the left menu, select <strong>Peerings</strong> under <em>Settings</em>, then click <strong>+ Add</strong>.
+        The facilitator runs <code>peer-hub.ps1</code> from the local machine. This script creates the hub-side peering for each spoke in the cohort. Watch the terminal output — one peering entry per participant slot.
       </li>
       <li>
-        The form has two sections. Fill in the <em>Remote virtual network summary</em> section first (this configures the hub side of the peering):
-        <ul>
-          <li>Peering link name: <strong><span id="step-hub-peering-name"></span></strong> — the instructor will see this name on hub-vnet</li>
-          <li>Peering type: <strong>Virtual network</strong></li>
-          <li>Subscription: your workshop subscription</li>
-          <li>Virtual network: <strong>hub-vnet (hub-rg)</strong> — you have Reader access so it appears in the picker</li>
-          <li>Leave all <em>Remote virtual network peering settings</em> at their defaults — only <em>Allow hub-vnet to access your spoke</em> should be checked</li>
-        </ul>
+        Each participant can open their own VNet blade → <strong>Peerings</strong> and observe the peering entry changing from <em>Initiated</em> to <strong>Connected</strong>.
       </li>
       <li>
-        Fill in the <em>Local virtual network summary</em> section (this configures your spoke side):
-        <ul>
-          <li>Peering link name: <strong><span id="step-peering-name"></span></strong></li>
-          <li>Leave all <em>Local virtual network peering settings</em> at their defaults — only <em>Allow your spoke to access hub-vnet</em> should be checked</li>
-        </ul>
-      </li>
-      <li>
-        Click <strong>Add</strong>. The portal creates both the spoke and hub sides of the peering; status should reach <strong>Connected</strong> within a minute or two (refresh the Peerings blade).
-      </li>
-      <li>
-        If the status stays <em>Initiated</em> or you hit a permissions error, raise your hand or message in the group chat — the instructor can run <code>peer-hub.ps1</code> to create the hub side as a fallback.
+        The facilitator demonstrates the portal <em>Add peering</em> form on a test slot, showing the two-sided nature of peering (spoke side + hub side created in one form).
       </li>
     </ol>
+    <div class="callout callout-info" style="margin-top:1rem">
+      <strong>Want to try it yourself?</strong> If you want hands-on practice after the demo, you can optionally delete your peering and recreate it manually — but this is not required to continue the hackathon.
+    </div>
 
     <a class="link-card" href="https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-peering-overview" target="_blank" rel="noopener noreferrer">
       <span class="link-card-icon">📖</span>
@@ -108,13 +98,13 @@
   </div>
 
   <div class="card">
-    <h2>Your progress</h2>
+    <h2>Your progress (optional)</h2>
+    <p style="font-size:0.875rem;color:#605e5c;margin-bottom:0.75rem">Peering is instructor-led and not a required blocker. You can optionally mark this if you completed hands-on practice.</p>
     <div id="status-row"></div>
   </div>
 
-  <div class="callout callout-hold">
-    <strong>⏸ Hold for regroup</strong>
-    After your peering shows <em>Connected</em>, click <strong>Complete</strong> above. Wait for the instructor to regroup before moving to Module 3.
+  <div class="callout callout-info">
+    <strong>ℹ️ Continue when the instructor gives the go-ahead</strong> — once the facilitator confirms peering is connected for all spokes, move on to Module 3.
   </div>
 
   <div class="page-nav">

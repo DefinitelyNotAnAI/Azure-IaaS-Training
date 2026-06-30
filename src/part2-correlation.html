@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part 2 — Correlation View — Azure IaaS Hackathon</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Hackathon</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Data layer banner -->
+  <div id="datalayer-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your slot:</strong> <span id="banner-slot"></span></span>
+    </div>
+    <a id="banner-fabric-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Fabric Workspace →</a>
+  </div>
+
+  <h2 class="page-title">Part 2 — Correlation View</h2>
+  <p class="page-subtitle">Save your correlation query as a reusable function — this becomes the semantic layer your Part 3 agent will call.</p>
+
+  <div class="card">
+    <h2>Why save as a function?</h2>
+    <p>Your Part 3 Foundry agent will call your Fabric Data Agent to answer questions about system behaviour. The Data Agent can be grounded on <strong>named KQL functions</strong> rather than ad-hoc queries — this gives the agent a stable, well-named interface to the data and makes its answers more consistent.</p>
+    <p>In this challenge you will:</p>
+    <ol>
+      <li>Save your correlation join as a <strong>named KQL function</strong> in <code>workshop-db</code>.</li>
+      <li>Verify it returns the expected correlated windows.</li>
+      <li><em>(Stretch)</em> Build a <strong>blind-spot detector</strong> — finds windows where tickets spiked but telemetry shows no anomaly.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Must-do — Save your correlation function</h2>
+    <ol class="lab-steps">
+      <li>Open <strong>workshop-db</strong> in the Fabric workspace.</li>
+      <li>Run the <code>.create-or-alter function</code> command below to save your correlation query as a named function.</li>
+      <li>Test it by calling <code>SlotCorrelation_<<SLOT>>()</code> — it should return the correlated windows from Challenge 2.</li>
+    </ol>
+
+    <pre class="kql-starter">// Save your correlation query as a named function
+// Run this in workshop-db
+
+.create-or-alter function
+    with (docstring = 'Correlated spike + ticket windows for <<SLOT>>')
+    SlotCorrelation_<<SLOT>>() {
+    let spikeThresholdMs = 500;
+    let spikeWindows =
+        SlotTelemetry_<<SLOT>>()
+        | summarize AvgLatencyMs = avg(LatencyMs), ErrorTotal = sum(ErrorCount) by bin(Timestamp, 5m)
+        | where AvgLatencyMs > spikeThresholdMs;
+    let ticketBursts =
+        SlotTickets_<<SLOT>>()
+        | summarize TicketCount = count() by bin(Timestamp, 5m)
+        | where TicketCount > 3;
+    spikeWindows
+    | join kind=inner (ticketBursts) on Timestamp
+    | project Timestamp, AvgLatencyMs, ErrorTotal, TicketCount
+    | order by Timestamp asc
+}</pre>
+
+    <pre class="kql-starter">// Test it
+SlotCorrelation_<<SLOT>>()</pre>
+  </div>
+
+  <div class="card">
+    <h2>Stretch — Blind-spot detector</h2>
+    <p>A <strong>blind spot</strong> is a ticket burst with no corresponding telemetry anomaly. It means users are experiencing a problem that your monitoring didn't catch — a perception gap. Save this as another function:</p>
+
+    <pre class="kql-starter">// Blind-spot detector: ticket bursts with no telemetry anomaly
+.create-or-alter function
+    with (docstring = 'Blind-spot windows for <<SLOT>>: tickets with no telemetry anomaly')
+    SlotBlindSpots_<<SLOT>>() {
+    let ticketBursts =
+        SlotTickets_<<SLOT>>()
+        | summarize TicketCount = count() by bin(Timestamp, 5m)
+        | where TicketCount > 2;
+    let anomalyWindows =
+        SlotTelemetry_<<SLOT>>()
+        | where IsAnomaly == true
+        | summarize AnomalyCount = count() by bin(Timestamp, 5m);
+    ticketBursts
+    | join kind=leftanti (anomalyWindows) on Timestamp
+    | project Timestamp, TicketCount
+    | order by Timestamp asc
+}</pre>
+
+    <pre class="kql-starter">// Test it
+SlotBlindSpots_<<SLOT>>()</pre>
+
+    <div class="callout callout-info" style="margin-top:0.75rem">
+      <strong>Expected result:</strong> You may see a few blind-spot windows early in the session — this is intentional. The chaos engine injects some "noise" tickets that don't correspond to real system failures, creating the perception gaps your agent will need to distinguish from real issues.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Stretch — Early-warning detector</h2>
+    <p>The inverse of a blind spot: telemetry degradation <em>before</em> tickets appear. The system is struggling but users haven't noticed yet — or the support channel lags behind the incident.</p>
+
+    <pre class="kql-starter">// Early-warning: telemetry anomalies with no ticket burst yet
+let anomalyWindows =
+    SlotTelemetry_<<SLOT>>()
+    | where IsAnomaly == true
+    | summarize AnomalyCount = count(), AvgLatencyMs = avg(LatencyMs) by bin(Timestamp, 5m);
+let ticketBursts =
+    SlotTickets_<<SLOT>>()
+    | summarize TicketCount = count() by bin(Timestamp, 5m)
+    | where TicketCount > 2;
+anomalyWindows
+| join kind=leftanti (ticketBursts) on Timestamp
+| project Timestamp, AnomalyCount, AvgLatencyMs
+| order by Timestamp asc</pre>
+  </div>
+
+  <div class="card">
+    <h2>Bridge to Part 3</h2>
+    <p>You now have four named functions for your slot:</p>
+    <ul>
+      <li><code>SlotTelemetry_<<SLOT>>()</code> — all your telemetry, partitioned to your data</li>
+      <li><code>SlotTickets_<<SLOT>>()</code> — all your support tickets</li>
+      <li><code>SlotCorrelation_<<SLOT>>()</code> — correlated spike + ticket windows (root cause evidence)</li>
+      <li><code>SlotBlindSpots_<<SLOT>>()</code> — ticket bursts with no matching anomaly (stretch)</li>
+    </ul>
+    <p>In Challenge 4 you will ground your Fabric Data Agent on these functions. Your Part 3 Foundry agent will then query them in natural language to find the planted root cause.</p>
+  </div>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="page-nav">
+    <a href="part2-kql.html" class="btn btn-secondary">← KQL Correlation</a>
+    <a href="part2-dataagent.html" class="btn btn-primary">Continue to Data Agent →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderStatusRow('part2_correlation');
+
+    var p    = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+
+    var banner   = document.getElementById('datalayer-banner');
+    var slotEl   = document.getElementById('banner-slot');
+    var fabricEl = document.getElementById('banner-fabric-link');
+    var fabricUrl = (window.APP_CONFIG || {}).fabricWorkspaceUrl || '';
+
+    if (slotEl)  slotEl.textContent = slot;
+    if (fabricEl && fabricUrl) { fabricEl.href = fabricUrl; banner.style.display = 'flex'; }
+
+    document.querySelectorAll('.kql-starter').forEach(function (el) {
+      el.textContent = el.textContent.replace(/<<SLOT>>/g, slot);
+    });
+    // Also replace in static text spans
+    document.querySelectorAll('.slot-inline').forEach(function (el) {
+      el.textContent = slot;
+    });
+  });
+</script>
+</body>
+</html>

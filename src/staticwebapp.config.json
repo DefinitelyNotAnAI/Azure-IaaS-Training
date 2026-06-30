@@ -31,6 +31,42 @@
     {
       "route": "/admin.html",
       "headers": { "Cache-Control": "no-cache, must-revalidate" }
+    },
+    {
+      "route": "/admin.js",
+      "headers": { "Cache-Control": "no-cache, must-revalidate" }
+    },
+    {
+      "route": "/part1-validate.html",
+      "headers": { "Cache-Control": "no-cache, must-revalidate" }
+    },
+    {
+      "route": "/part2-signals.html",
+      "headers": { "Cache-Control": "no-cache, must-revalidate" }
+    },
+    {
+      "route": "/part2-kql.html",
+      "headers": { "Cache-Control": "no-cache, must-revalidate" }
+    },
+    {
+      "route": "/part2-correlation.html",
+      "headers": { "Cache-Control": "no-cache, must-revalidate" }
+    },
+    {
+      "route": "/part2-dataagent.html",
+      "headers": { "Cache-Control": "no-cache, must-revalidate" }
+    },
+    {
+      "route": "/part3-scaffold.html",
+      "headers": { "Cache-Control": "no-cache, must-revalidate" }
+    },
+    {
+      "route": "/part3-prompts.html",
+      "headers": { "Cache-Control": "no-cache, must-revalidate" }
+    },
+    {
+      "route": "/part3-validate.html",
+      "headers": { "Cache-Control": "no-cache, must-revalidate" }
     }
   ],
   "navigationFallback": {

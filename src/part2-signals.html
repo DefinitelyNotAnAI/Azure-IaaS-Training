@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part 2 — Confirm Signals — Azure IaaS Hackathon</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Hackathon</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Data layer banner -->
+  <div id="datalayer-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your slot:</strong> <span id="banner-slot"></span></span>
+      <span><strong>Telemetry function:</strong> <code id="banner-fn"></code></span>
+    </div>
+    <a id="banner-fabric-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Fabric Workspace →</a>
+  </div>
+
+  <h2 class="page-title">Part 2 — Confirm Signals</h2>
+  <p class="page-subtitle">Verify your VM's telemetry and support tickets are landing in the shared Fabric data layer.</p>
+
+  <div class="card">
+    <h2>What you're about to do</h2>
+    <p>Your legacy support app has been running on your VM since Part 1. It has been emitting two streams of data to the shared data layer:</p>
+    <ul>
+      <li><strong>Telemetry (Plane A)</strong> — per-operation metrics: latency, errors, throughput — landing in the shared <strong>Eventhouse</strong> (<code>workshop-db</code>, <code>Telemetry</code> table), filtered to your slot by a per-slot KQL function.</li>
+      <li><strong>Support tickets (Plane B)</strong> — simulated customer complaints — landing in the shared <strong>Lakehouse</strong> (<code>workshop-lakehouse</code>, <code>Tickets</code> table).</li>
+    </ul>
+    <p>In this challenge you will confirm both streams are arriving and get comfortable with the Fabric query surface you'll use for the rest of Part 2.</p>
+  </div>
+
+  <div class="card">
+    <h2>Must-do — Confirm telemetry in Eventhouse</h2>
+    <ol class="lab-steps">
+      <li>Open the <strong>Fabric workspace</strong> using the button above.</li>
+      <li>In the workspace, click on <strong>workshop-eventhouse</strong>, then open the <strong>workshop-db</strong> KQL database.</li>
+      <li>Click <strong>Explore your data</strong> (or open the KQL queryset). Copy and run the starter query below — it uses your per-slot function which filters to only your data.</li>
+      <li>Confirm you see at least a few rows with your <code>SlotId</code>, timestamps, service names, and latency values.</li>
+    </ol>
+
+    <pre class="kql-starter">// Confirm your telemetry signals (replace <<SLOT>> if needed)
+SlotTelemetry_<<SLOT>>()
+| take 10
+| project Timestamp, Service, Operation, Region, LatencyMs, ErrorCount, IsAnomaly
+| order by Timestamp desc</pre>
+
+    <div class="callout callout-info" style="margin-top:0.75rem">
+      <strong>No rows?</strong> Check that the VM extension installed successfully (Part 1 validation page) and that at least 5 minutes have passed since the app started. If the issue persists, raise your hand — the facilitator can check the Eventstream ingestion logs.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Must-do — Confirm tickets in Lakehouse</h2>
+    <ol class="lab-steps">
+      <li>In the Fabric workspace, open <strong>workshop-lakehouse</strong>.</li>
+      <li>Under <strong>Tables</strong>, find the <code>Tickets</code> table.</li>
+      <li>Click <strong>Preview</strong> (or open a Notebook/SQL endpoint) and filter by <code>SlotId = '<<SLOT>>'</code>.</li>
+      <li>Confirm you see support tickets with your slot ID, customer names, and description text. Note that the descriptions are intentionally messy — they're simulated user complaints.</li>
+    </ol>
+    <p style="font-size:0.875rem;color:#605e5c">You can also query Tickets from the KQL surface using the per-slot function:</p>
+    <pre class="kql-starter">SlotTickets_<<SLOT>>()
+| take 10
+| project Timestamp, TicketId, CustomerTenant, Description, IncidentId
+| order by Timestamp desc</pre>
+  </div>
+
+  <div class="card">
+    <h2>Explore: understand what the chaos engine injected</h2>
+    <p>Run this query to get a summary of your telemetry grouped by anomaly flag. Normal operation and injected incidents will show as separate bands.</p>
+    <pre class="kql-starter">// Anomaly vs normal traffic summary
+SlotTelemetry_<<SLOT>>()
+| summarize Count = count(), AvgLatencyMs = avg(LatencyMs)
+    by bin(Timestamp, 10m), IsAnomaly
+| order by Timestamp asc</pre>
+    <p style="font-size:0.875rem;color:#605e5c;margin-top:0.5rem">You should see normal low-latency periods punctuated by anomaly spikes. Keep a mental note of the spike timestamps — you'll find their ticket counterparts in Challenge 2.</p>
+  </div>
+
+  <a class="link-card" href="https://learn.microsoft.com/en-us/fabric/real-time-intelligence/eventhouse" target="_blank" rel="noopener noreferrer">
+    <span class="link-card-icon">📖</span>
+    <div class="link-card-body">
+      <div class="link-card-title">Microsoft Fabric Eventhouse</div>
+      <div class="link-card-desc">Overview of the Eventhouse real-time analytics engine and KQL databases.</div>
+    </div>
+  </a>
+  <a class="link-card" href="https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/" target="_blank" rel="noopener noreferrer">
+    <span class="link-card-icon">🔍</span>
+    <div class="link-card-body">
+      <div class="link-card-title">KQL quick reference</div>
+      <div class="link-card-desc">Core KQL operators: where, summarize, project, join, bin — the building blocks for Part 2 queries.</div>
+    </div>
+  </a>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="page-nav">
+    <a href="part1-validate.html" class="btn btn-secondary">← Part 1 Validation</a>
+    <a href="part2-kql.html" class="btn btn-primary">Continue to KQL Correlation →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderStatusRow('part2_signals');
+
+    var p    = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+
+    // Data layer banner
+    var banner    = document.getElementById('datalayer-banner');
+    var slotEl    = document.getElementById('banner-slot');
+    var fnEl      = document.getElementById('banner-fn');
+    var fabricEl  = document.getElementById('banner-fabric-link');
+    var fabricUrl = (window.APP_CONFIG || {}).fabricWorkspaceUrl || '';
+
+    if (slotEl)  slotEl.textContent = slot;
+    if (fnEl)    fnEl.textContent   = 'SlotTelemetry_' + slot + '()';
+    if (fabricEl && fabricUrl) { fabricEl.href = fabricUrl; banner.style.display = 'flex'; }
+
+    // Inject slot into all KQL starter blocks
+    document.querySelectorAll('.kql-starter').forEach(function (el) {
+      el.textContent = el.textContent.replace(/<<SLOT>>/g, slot);
+    });
+  });
+</script>
+</body>
+</html>

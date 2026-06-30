@@ -1,0 +1,60 @@
+// ── Eventhouse schema for workshop-db ─────────────────────────────────────────
+// Applied to the Eventhouse KQL database by infra/data-layer/setup-fabric.ps1.
+// setup-fabric.ps1 extracts and runs the .create-merge and .alter lines below.
+
+// ── Telemetry table — Plane A (system telemetry, objective) ──────────────────
+// Each row is one operation sample emitted by a participant's legacy-system app.
+
+.create-merge table Telemetry (
+    SlotId:        string,      // Participant slot, e.g. "user01"
+    Timestamp:     datetime,    // UTC event time (from app)
+    IngestedAt:    datetime,    // UTC time the Ingestion API received the event
+    Service:       string,      // e.g. "OrderService", "PaymentService"
+    Operation:     string,      // e.g. "ProcessOrder", "ValidateCard"
+    Region:        string,      // e.g. "eastus2"
+    LatencyMs:     int,         // Operation latency in milliseconds
+    ErrorCount:    int,         // Errors in this sample window
+    Throughput:    int,         // Requests per minute for this sample
+    IsAnomaly:     bool,        // Set by chaos engine for injected events
+    IncidentId:    string,      // Correlates to a chaos scenario (empty if normal)
+    CorrelationId: string       // Optional end-to-end correlation ID
+)
+
+.alter table Telemetry policy retention @'{"SoftDeletePeriod":"7.00:00:00","Recoverability":"Disabled"}'
+
+// ── Correlation query — Part 2 challenge 2 starter ───────────────────────────
+// Finds latency spike windows that correlate with ticket bursts.
+// Participants start from this in part2-kql.html.
+//
+// let slot = 'user01';  // replace with your slot
+// let spikeThresholdMs = 500;
+// let spikeWindows =
+//     Telemetry
+//     | where SlotId == slot
+//     | summarize AvgLatencyMs = avg(LatencyMs), ErrorTotal = sum(ErrorCount) by bin(Timestamp, 5m)
+//     | where AvgLatencyMs > spikeThresholdMs;
+// let ticketBursts =
+//     Tickets
+//     | where SlotId == slot
+//     | summarize TicketCount = count() by bin(Timestamp, 5m)
+//     | where TicketCount > 3;
+// spikeWindows
+//     | join kind=inner (ticketBursts) on Timestamp
+//     | project Timestamp, AvgLatencyMs, ErrorTotal, TicketCount
+//     | order by Timestamp asc
+
+// ── Blind-spot query — Part 2 stretch challenge ───────────────────────────────
+// Finds ticket clusters with no corresponding telemetry anomaly.
+//
+// let slot = 'user01';
+// let ticketWindows =
+//     Tickets | where SlotId == slot
+//     | summarize TicketCount = count() by bin(Timestamp, 5m);
+// let anomalyWindows =
+//     Telemetry | where SlotId == slot and IsAnomaly == true
+//     | summarize AnomalyCount = count() by bin(Timestamp, 5m);
+// ticketWindows
+//     | join kind=leftanti (anomalyWindows) on Timestamp
+//     | where TicketCount > 2
+//     | project Timestamp, TicketCount
+//     | order by Timestamp asc

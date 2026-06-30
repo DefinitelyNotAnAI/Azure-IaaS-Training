@@ -1,0 +1,21 @@
+{
+  "name": "workshop-ingest-api",
+  "version": "1.0.0",
+  "description": "Workshop shared Ingestion API — forwards telemetry and support signals to Event Hub",
+  "main": "src/functions/index.js",
+  "scripts": {
+    "start": "func start",
+    "build": "echo 'No build step'",
+    "test": "echo 'No tests configured'"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.0",
+    "@azure/event-hubs": "^5.12.0",
+    "@azure/functions": "^4.6.0",
+    "@azure/identity": "^4.4.1"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

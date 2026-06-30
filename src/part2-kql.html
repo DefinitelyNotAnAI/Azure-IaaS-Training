@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part 2 — KQL Correlation — Azure IaaS Hackathon</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Hackathon</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Data layer banner -->
+  <div id="datalayer-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your slot:</strong> <span id="banner-slot"></span></span>
+    </div>
+    <a id="banner-fabric-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Fabric Workspace →</a>
+  </div>
+
+  <h2 class="page-title">Part 2 — KQL Correlation</h2>
+  <p class="page-subtitle">Write a KQL query that joins latency spikes in Telemetry with ticket bursts in Tickets.</p>
+
+  <div class="card">
+    <h2>The challenge</h2>
+    <p>The core question your Part 3 agent must answer is: <strong>"Did a system event cause a customer impact?"</strong> The correlation query is how you answer it at the data layer.</p>
+    <p>Your goal is to find time windows where <strong>both</strong> of the following are true simultaneously:</p>
+    <ul>
+      <li>Telemetry shows a <strong>latency spike</strong> (average latency above a threshold, or a high error count)</li>
+      <li>Support tickets show a <strong>burst</strong> (unusually high ticket count in the same window)</li>
+    </ul>
+    <p>A co-occurring spike + burst is strong evidence of a customer-impacting system issue. A spike <em>without</em> a burst (or vice versa) is a signal worth investigating too — you'll explore that in Challenge 3.</p>
+  </div>
+
+  <div class="card">
+    <h2>Must-do — Write the correlation join</h2>
+    <ol class="lab-steps">
+      <li>Open <strong>workshop-db</strong> in the Fabric workspace.</li>
+      <li>Copy the starter query below into the KQL editor.</li>
+      <li>Run it and identify at least <strong>one time window</strong> where a latency spike and a ticket burst co-occur.</li>
+      <li>Note the <code>Timestamp</code> of that window — you'll need it for Challenge 3.</li>
+    </ol>
+
+    <pre class="kql-starter">// Challenge 2 — Correlation join: spike windows ∩ ticket bursts
+let spikeThresholdMs = 500;
+let spikeWindows =
+    SlotTelemetry_<<SLOT>>()
+    | summarize AvgLatencyMs = avg(LatencyMs), ErrorTotal = sum(ErrorCount) by bin(Timestamp, 5m)
+    | where AvgLatencyMs > spikeThresholdMs;
+let ticketBursts =
+    SlotTickets_<<SLOT>>()
+    | summarize TicketCount = count() by bin(Timestamp, 5m)
+    | where TicketCount > 3;
+spikeWindows
+| join kind=inner (ticketBursts) on Timestamp
+| project Timestamp, AvgLatencyMs, ErrorTotal, TicketCount
+| order by Timestamp asc</pre>
+
+    <div class="callout callout-info" style="margin-top:0.75rem">
+      <strong>Tip:</strong> If the join returns no rows, try lowering <code>spikeThresholdMs</code> (e.g. 300) or reducing the ticket burst threshold (<code>TicketCount &gt; 1</code>). The chaos engine injects incidents on a shared timeline — they may not have fired yet.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Stretch — Identify the incident ID</h2>
+    <p>The chaos engine stamps an <code>IncidentId</code> on both telemetry anomalies and the tickets they triggered. Find the incident ID linking a spike to its tickets:</p>
+
+    <pre class="kql-starter">// Stretch: find the IncidentId linking a spike window to its tickets
+let targetWindow = datetime('REPLACE-WITH-SPIKE-TIMESTAMP');
+let targetWindowEnd = targetWindow + 5m;
+let spikeIncidents =
+    SlotTelemetry_<<SLOT>>()
+    | where Timestamp between (targetWindow .. targetWindowEnd) and IsAnomaly == true
+    | summarize by IncidentId
+    | where isnotempty(IncidentId);
+SlotTickets_<<SLOT>>()
+| where Timestamp between (targetWindow .. targetWindowEnd)
+| join kind=inner (spikeIncidents) on IncidentId
+| project Timestamp, TicketId, CustomerTenant, Description, IncidentId
+| order by Timestamp asc</pre>
+
+    <p style="font-size:0.875rem;color:#605e5c;margin-top:0.5rem">Replace <code>REPLACE-WITH-SPIKE-TIMESTAMP</code> with the timestamp you identified in the must-do query. The <code>IncidentId</code> is the planted root cause your Part 3 agent will need to name.</p>
+  </div>
+
+  <div class="card">
+    <h2>Stretch — Customer impact: which tenants were affected?</h2>
+    <pre class="kql-starter">// Stretch: which customers raised tickets during the spike window?
+let targetWindow = datetime('REPLACE-WITH-SPIKE-TIMESTAMP');
+SlotTickets_<<SLOT>>()
+| where Timestamp between (targetWindow .. targetWindow + 10m)
+| summarize TicketCount = count() by CustomerTenant
+| order by TicketCount desc</pre>
+  </div>
+
+  <a class="link-card" href="https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/joinoperator" target="_blank" rel="noopener noreferrer">
+    <span class="link-card-icon">📖</span>
+    <div class="link-card-body">
+      <div class="link-card-title">KQL join operator</div>
+      <div class="link-card-desc">inner, leftouter, leftanti flavours — choosing the right join kind for correlation vs blind-spot detection.</div>
+    </div>
+  </a>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="page-nav">
+    <a href="part2-signals.html" class="btn btn-secondary">← Confirm Signals</a>
+    <a href="part2-correlation.html" class="btn btn-primary">Continue to Correlation View →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderStatusRow('part2_kql');
+
+    var p    = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+
+    var banner   = document.getElementById('datalayer-banner');
+    var slotEl   = document.getElementById('banner-slot');
+    var fabricEl = document.getElementById('banner-fabric-link');
+    var fabricUrl = (window.APP_CONFIG || {}).fabricWorkspaceUrl || '';
+
+    if (slotEl)  slotEl.textContent = slot;
+    if (fabricEl && fabricUrl) { fabricEl.href = fabricUrl; banner.style.display = 'flex'; }
+
+    document.querySelectorAll('.kql-starter').forEach(function (el) {
+      el.textContent = el.textContent.replace(/<<SLOT>>/g, slot);
+    });
+  });
+</script>
+</body>
+</html>
