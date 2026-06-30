@@ -1,15 +1,31 @@
 <#
 .SYNOPSIS
-  Seeds a workshop cohort: creates 30 Entra users, assigns RBAC, issues TAPs,
-  writes Assignments rows to Azure Table Storage.
+  Seeds a hackathon cohort: creates 30 Entra users, assigns RBAC, issues TAPs,
+  generates per-slot ingestion keys, and writes Assignments rows to Azure Table Storage.
 
-.PARAMETER SessionId       Cohort identifier, e.g. contoso-2026-01-01
-.PARAMETER StorageAccount  Name of the workshop app storage account (from azd output)
-.PARAMETER SlotCount       Number of slots to provision (default 30)
-.PARAMETER TapMinutes      TAP lifetime in minutes (default 480 = 8 hours)
+.PARAMETER SessionId         Cohort identifier, e.g. contoso-2026-01-01
+.PARAMETER StorageAccount    Name of the workshop app storage account (from azd output)
+.PARAMETER IngestFunctionApp Name of the Ingestion API function app (from azd output).
+                             If provided, INGEST_KEYS_JSON is updated automatically.
+.PARAMETER DataRg            Data layer resource group (default workshop-data-rg).
+.PARAMETER FabricWorkspaceId Fabric workspace ID for granting participant Viewer access.
+                             Leave empty to skip. Get from infra/data-layer/fabric-outputs.json.
+.PARAMETER SkipPeeringRole   Skip assigning the 'Workshop Hub Peering' custom role.
+                             Peering is instructor-led in the hackathon; set this flag
+                             to skip the assignment (avoids the custom-role dependency).
+.PARAMETER SlotCount         Number of slots to provision (default 30)
+.PARAMETER TapMinutes        TAP lifetime in minutes (default 480 = 8 hours)
 
 .EXAMPLE
+  # Minimal — tracking API only, no data-layer wiring
   .\seed-cohort.ps1 -SessionId contoso-2026-01-01 -StorageAccount wkstorexxxxxx
+
+.EXAMPLE
+  # Full hackathon — wires ingestion keys + Fabric Viewer access
+  .\seed-cohort.ps1 -SessionId contoso-2026-01-01 -StorageAccount wkstorexxxxxx `
+    -IngestFunctionApp workshop-ingest-xxxxxx `
+    -FabricWorkspaceId 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' `
+    -SkipPeeringRole
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -20,6 +36,10 @@ param(
   [string]$SubscriptionId    = '',   # defaults to current Az context
   [string]$AppRg             = 'workshop-app-rg',
   [string]$HubRg             = 'hub-rg',
+  [string]$IngestFunctionApp = '',   # set to update INGEST_KEYS_JSON automatically
+  [string]$DataRg            = 'workshop-data-rg',
+  [string]$FabricWorkspaceId = '',   # set to grant participants Fabric Viewer access
+  [switch]$SkipPeeringRole,          # skip 'Workshop Hub Peering' role (peering is instructor-led)
   [int]   $SlotCount         = 30,
   [int]   $TapMinutes        = 480
 )
@@ -44,6 +64,15 @@ if (-not $SubscriptionId) {
 
 # Verify the storage account is reachable (key auth is disabled; uses --auth-mode login)
 Write-Host "  Storage account: $StorageAccount (OAuth auth)" -ForegroundColor Gray
+
+# ── Per-slot ingestion key generator ─────────────────────────────────────────────
+function New-IngestKey {
+    $bytes = [byte[]]::new(16)
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    return [BitConverter]::ToString($bytes).Replace('-','').ToLower()
+}
+
+$keysMap = @{} # slot -> ingest key; written to cohort-keys.json at the end
 
 $slots = 1..$SlotCount | ForEach-Object { 'user{0:D2}' -f $_ }
 
@@ -124,6 +153,14 @@ foreach ($slot in $slots) {
   } else {
     Write-Host "  ✓ Workshop Hub Peering already assigned" -ForegroundColor Green
   }
+  } else {
+    Write-Host "  [SkipPeeringRole] Skipping 'Workshop Hub Peering' role assignment (peering is instructor-led)" -ForegroundColor Gray
+  }
+
+  # ── Generate per-slot ingestion key ─────────────────────────────────────────────────
+  $ingestKey = New-IngestKey
+  $keysMap[$slot] = $ingestKey
+  Write-Host "  Generated ingest key for $slot" -ForegroundColor Gray
 
   # ── Issue TAP ─────────────────────────────────────────────────────────────
   # Revoke any existing TAP first (idempotent)
@@ -159,6 +196,7 @@ foreach ($slot in $slots) {
       "tempCredential=$tapCode" `
       "currentTapId=$tapId" `
       "tapIssuedAt=$tapIssuedAt" `
+      "ingestKey=$ingestKey" `
       "claimedByEmail=" `
       "claimedAt=" `
     --if-exists replace `
@@ -166,6 +204,55 @@ foreach ($slot in $slots) {
   Write-Host "  ✓ Assignments row written" -ForegroundColor Green
 }
 
-Write-Host "`n[seed-cohort] Complete. $SlotCount slots seeded for session '$SessionId'." -ForegroundColor Green
+# ── Post-loop: write keys file + update Ingestion API + Fabric access ───────────────────────
+
+# Always write cohort-keys.json (gitignored — contains secrets)
+$outputPath = Join-Path $PSScriptRoot 'cohort-keys.json'
+$keysMap | ConvertTo-Json | Set-Content $outputPath
+Write-Host "`n[seed-cohort] Ingestion keys written to $outputPath (gitignored — contains secrets)" -ForegroundColor Cyan
+
+# Optionally push keys to the Ingestion API app settings
+if ($IngestFunctionApp) {
+    Write-Host "[seed-cohort] Updating INGEST_KEYS_JSON on $IngestFunctionApp..." -ForegroundColor Cyan
+    $keysJson = ($keysMap | ConvertTo-Json -Compress)
+    az functionapp config appsettings set `
+        --name $IngestFunctionApp `
+        --resource-group $DataRg `
+        --settings "INGEST_KEYS_JSON=$keysJson" `
+        --output none
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  ✓ INGEST_KEYS_JSON updated" -ForegroundColor Green
+    } else {
+        Write-Warning "  Failed to update INGEST_KEYS_JSON — set it manually from cohort-keys.json"
+    }
+}
+
+# Optionally grant Fabric Viewer access to all participant users
+if ($FabricWorkspaceId) {
+    Write-Host "`n[seed-cohort] Granting Fabric Viewer access to $SlotCount participants..." -ForegroundColor Cyan
+    $fabricToken  = (az account get-access-token --resource 'https://api.fabric.microsoft.com' --output json | ConvertFrom-Json).accessToken
+    $fabricHeaders = @{ Authorization = "Bearer $fabricToken"; 'Content-Type' = 'application/json' }
+    foreach ($slot in $slots) {
+        $upn  = "$slot@$TenantDomain"
+        $user = Get-MgUser -Filter "userPrincipalName eq '$upn'" -ErrorAction SilentlyContinue
+        if (-not $user) { continue }
+        try {
+            $body = @{ principal = @{ id = $user.Id; type = 'User' }; role = 'Viewer' } | ConvertTo-Json -Compress
+            Invoke-RestMethod -Method POST `
+                -Uri "https://api.fabric.microsoft.com/v1/workspaces/$FabricWorkspaceId/roleAssignments" `
+                -Headers $fabricHeaders -Body $body -ErrorAction Stop | Out-Null
+            Write-Host "  ✓ Viewer granted to $slot" -ForegroundColor Green
+        } catch {
+            $sc = $_.Exception.Response?.StatusCode?.value__
+            if ($sc -eq 409) { Write-Host "  ✓ $slot already has Viewer access" -ForegroundColor Gray }
+            else { Write-Warning "  Failed to grant Viewer to $slot: $($_.ErrorDetails.Message)" }
+        }
+    }
+}
 Write-Host "  Run TAP smoke test: sign in to portal.azure.com as user01@$TenantDomain with their TAP." -ForegroundColor Gray
-Write-Host "  Next step: deploy spokes.bicep if not already done." -ForegroundColor Gray
+Write-Host "  Next steps:" -ForegroundColor Gray
+Write-Host "    1. Deploy spokes.bicep if not already done." -ForegroundColor Gray
+Write-Host "    2. If data layer deployed: run install-legacy-app.ps1 after Module 3." -ForegroundColor Gray
+if (-not $IngestFunctionApp) {
+    Write-Host "    3. Update INGEST_KEYS_JSON on the Ingestion API (use cohort-keys.json)." -ForegroundColor Yellow
+}

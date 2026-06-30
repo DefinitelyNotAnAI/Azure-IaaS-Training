@@ -1,13 +1,24 @@
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Users
 <#
 .SYNOPSIS
-  Tears down a cohort: deletes 30 user accounts, 30 spoke RGs, hub-side peerings,
-  and purges the cohort partition from Participants + Assignments tables.
+  Tears down a hackathon cohort: deletes VMs, spoke RGs, Entra user accounts,
+  hub-side peerings, purges table rows, resets INGEST_KEYS_JSON, and optionally
+  suspends the Fabric capacity.
   Hub-rg and workshop-app-rg are untouched.
 
+.PARAMETER PauseFabricCapacity  Suspend the Fabric capacity after teardown.
+.PARAMETER FabricCapacityName   Azure Fabric capacity resource name.
+.PARAMETER FabricCapacityRg     Resource group containing the Fabric capacity.
+.PARAMETER IngestFunctionApp    Name of the Ingestion API function app.
+                                If provided, INGEST_KEYS_JSON is reset to '{}'.
+.PARAMETER DataRg               Data layer resource group (default workshop-data-rg).
+
 .EXAMPLE
-  .\teardown-cohort.ps1 -SessionId contoso-2026-01-01 -StorageAccount wkstorexxxxxx
-  .\teardown-cohort.ps1 -SessionId contoso-2026-01-01 -StorageAccount wkstorexxxxxx -WhatIf
+  .\ teardown-cohort.ps1 -SessionId contoso-2026-01-01 -StorageAccount wkstorexxxxxx
+  .\ teardown-cohort.ps1 -SessionId contoso-2026-01-01 -StorageAccount wkstorexxxxxx -WhatIf
+  .\ teardown-cohort.ps1 -SessionId contoso-2026-01-01 -StorageAccount wkstorexxxxxx `
+    -IngestFunctionApp workshop-ingest-xxxxxx `
+    -PauseFabricCapacity -FabricCapacityName workshop-fabric -FabricCapacityRg workshop-data-rg
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
 param(
@@ -18,6 +29,11 @@ param(
   [string]$AppRg          = 'workshop-app-rg',
   [string]$HubRg          = 'hub-rg',
   [string]$HubVnetName    = 'hub-vnet',
+  [string]$IngestFunctionApp   = '',  # set to reset INGEST_KEYS_JSON
+  [string]$DataRg              = 'workshop-data-rg',
+  [switch]$PauseFabricCapacity,
+  [string]$FabricCapacityName  = '',
+  [string]$FabricCapacityRg    = '',
   [int]   $SlotCount      = 30
 )
 $ErrorActionPreference = 'Stop'
@@ -106,3 +122,33 @@ foreach ($tableName in @('Participants', 'Assignments')) {
 
 Write-Host "`n[teardown-cohort] Done. Hub-rg and workshop-app-rg are untouched." -ForegroundColor Green
 Write-Host "  Note: RG deletions run async — allow a few minutes for full completion." -ForegroundColor Gray
+
+# ── Reset Ingestion API keys ────────────────────────────────────────────────────────────
+if ($IngestFunctionApp) {
+    Write-Host "`n[teardown] Resetting INGEST_KEYS_JSON on $IngestFunctionApp..." -ForegroundColor Yellow
+    az functionapp config appsettings set `
+        --name $IngestFunctionApp `
+        --resource-group $DataRg `
+        --settings 'INGEST_KEYS_JSON={}' `
+        --output none
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  ✓ INGEST_KEYS_JSON reset to '{}'" -ForegroundColor Green
+    } else {
+        Write-Warning "  Failed to reset INGEST_KEYS_JSON — reset manually before next cohort."
+    }
+}
+
+# ── Suspend Fabric capacity ───────────────────────────────────────────────────────────
+if ($PauseFabricCapacity -and $FabricCapacityName) {
+    $capacityRg = if ($FabricCapacityRg) { $FabricCapacityRg } else { $DataRg }
+    Write-Host "`n[teardown] Suspending Fabric capacity '$FabricCapacityName' in $capacityRg..." -ForegroundColor Yellow
+    $subId = az account show --query id -o tsv
+    az rest --method post `
+        --url "https://management.azure.com/subscriptions/$subId/resourceGroups/$capacityRg/providers/Microsoft.Fabric/capacities/$FabricCapacityName/suspend?api-version=2023-11-01" `
+        --output none
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  ✓ Fabric capacity suspended (saves cost between events)" -ForegroundColor Green
+    } else {
+        Write-Warning "  Failed to suspend Fabric capacity — suspend manually in the Azure portal to avoid charges."
+    }
+}
