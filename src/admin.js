@@ -3,13 +3,19 @@
 (function () {
   'use strict';
 
-  const MODULES = ['onboarding', 'module1', 'module2', 'module3'];
-  const MODULE_LABELS = {
-    onboarding: 'Sign In',
-    module1: 'M1 Networking',
-    module2: 'M2 Peering',
-    module3: 'M3 Compute',
-  };
+  // ── Hackathon part definitions ─────────────────────────────────────────────
+  // Derived from APP_CONFIG.hackathonParts at runtime so the dashboard stays
+  // in sync with config.js automatically. Falls back to the hardcoded list.
+  function getParts() {
+    var cfg = (window.APP_CONFIG || {}).hackathonParts;
+    if (cfg && Array.isArray(cfg)) return cfg;
+    return [
+      { id: 'part1', label: 'Part 1 — Infrastructure', modules: ['onboarding', 'module1', 'module3', 'part1_validate'] },
+      { id: 'part2', label: 'Part 2 — Data Layer',     modules: ['part2_signals', 'part2_kql', 'part2_correlation', 'part2_dataagent'] },
+      { id: 'part3', label: 'Part 3 — AI Agent',       modules: ['part3_scaffold', 'part3_prompts', 'part3_validate'] },
+    ];
+  }
+
   const STATUS_LABELS = {
     not_started:   'Not started',
     started:       'Started',
@@ -75,7 +81,20 @@
     if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
     return Math.floor(diff / 3600) + 'h ago';
   }
+  // Aggregate status for a part: worst-first (need_help > started > not_started),
+  // but complete only if all modules are complete.
+  function partStatus(statuses, modules) {
+    var vals = modules.map(function (m) { return statuses[m] || 'not_started'; });
+    if (vals.some(function (v) { return v === 'need_help'; })) return 'need_help';
+    if (vals.every(function (v) { return v === 'complete'; })) return 'complete';
+    if (vals.some(function (v) { return v !== 'not_started'; })) return 'started';
+    return 'not_started';
+  }
 
+  // Count how many modules in a part are complete (for the sub-label in each cell)
+  function partProgress(statuses, modules) {
+    return modules.filter(function (m) { return (statuses[m] || '') === 'complete'; }).length;
+  }
   // ── Renderers ──────────────────────────────────────────────────────────────
 
   function renderReadinessGauge(participants) {
@@ -104,20 +123,21 @@
     if (!container) return;
     container.innerHTML = '';
 
-    MODULES.forEach(function (key) {
-      const counts = { started: 0, complete: 0, need_help: 0 };
+    getParts().forEach(function (part) {
+      var counts = { complete: 0, started: 0, need_help: 0, not_started: 0 };
       participants.forEach(function (p) {
-        const s = parseStatuses(p.moduleStatuses)[key] || 'not_started';
-        if (Object.prototype.hasOwnProperty.call(counts, s)) counts[s]++;
+        var agg = partStatus(parseStatuses(p.moduleStatuses), part.modules);
+        counts[agg] = (counts[agg] || 0) + 1;
       });
-      const card = document.createElement('div');
+      var card = document.createElement('div');
       card.className = 'regroup-card';
       card.innerHTML =
-        '<h3>' + escapeHtml(MODULE_LABELS[key]) + '</h3>' +
+        '<h3>' + escapeHtml(part.label) + '</h3>' +
         '<div class="regroup-counts">' +
           '<div class="regroup-count-block"><div class="regroup-count count-complete">' + counts.complete + '</div><div class="count-label">Complete</div></div>' +
-          '<div class="regroup-count-block"><div class="regroup-count count-started">' + counts.started + '</div><div class="count-label">Started</div></div>' +
+          '<div class="regroup-count-block"><div class="regroup-count count-started">' + counts.started + '</div><div class="count-label">In Progress</div></div>' +
           '<div class="regroup-count-block"><div class="regroup-count count-need_help">' + counts.need_help + '</div><div class="count-label">Need Help</div></div>' +
+          '<div class="regroup-count-block"><div class="regroup-count" style="color:#605e5c">' + counts.not_started + '</div><div class="count-label">Not started</div></div>' +
         '</div>';
       container.appendChild(card);
     });
@@ -133,24 +153,50 @@
 
     if (filtered.length === 0) {
       tbody.innerHTML =
-        '<tr><td colspan="7" style="text-align:center;color:#605e5c;padding:1.5rem">' +
+        '<tr><td colspan="6" style="text-align:center;color:#605e5c;padding:1.5rem">' +
         (participants.length === 0 ? 'No participants yet.' : 'No participants match the filter.') +
         '</td></tr>';
       return;
     }
 
+    const parts = getParts();
+
+    // Sort: need_help first, then by furthest part completed, then by name
+    var sorted = filtered.slice().sort(function (a, b) {
+      var sa = parseStatuses(a.moduleStatuses);
+      var sb = parseStatuses(b.moduleStatuses);
+      var aHelp = parts.some(function (pt) { return partStatus(sa, pt.modules) === 'need_help'; });
+      var bHelp = parts.some(function (pt) { return partStatus(sb, pt.modules) === 'need_help'; });
+      if (aHelp !== bHelp) return aHelp ? -1 : 1;
+      var aComplete = parts.filter(function (pt) { return partStatus(sa, pt.modules) === 'complete'; }).length;
+      var bComplete = parts.filter(function (pt) { return partStatus(sb, pt.modules) === 'complete'; }).length;
+      if (aComplete !== bComplete) return bComplete - aComplete;
+      return (a.displayName || '').localeCompare(b.displayName || '');
+    });
+
     tbody.innerHTML = '';
-    filtered.forEach(function (p) {
+    sorted.forEach(function (p) {
       const statuses = parseStatuses(p.moduleStatuses);
       const tr = document.createElement('tr');
-      const moduleCells = MODULES.map(function (m) {
-        const s = statuses[m] || 'not_started';
-        return '<td><span class="status-dot dot-' + s + '"></span>' + escapeHtml(STATUS_LABELS[s]) + '</td>';
+
+      const hasNeedHelp = parts.some(function (pt) { return partStatus(statuses, pt.modules) === 'need_help'; });
+      if (hasNeedHelp) tr.style.background = '#fff4ce';
+
+      const partCells = parts.map(function (pt) {
+        var agg   = partStatus(statuses, pt.modules);
+        var done  = partProgress(statuses, pt.modules);
+        var total = pt.modules.length;
+        var label = STATUS_LABELS[agg] || agg;
+        var sub   = (agg !== 'not_started' && agg !== 'complete')
+          ? '<br><small style="color:#605e5c;font-size:0.75rem">' + done + '/' + total + ' steps</small>'
+          : '';
+        return '<td><span class="status-dot dot-' + agg + '"></span>' + escapeHtml(label) + sub + '</td>';
       }).join('');
+
       tr.innerHTML =
         '<td>' + escapeHtml(p.displayName) + '<br><small style="color:#605e5c">' + escapeHtml(p.email) + '</small></td>' +
         '<td>' + escapeHtml(p.assignedSlot || '—') + '</td>' +
-        moduleCells +
+        partCells +
         '<td>' + timeAgo(p.lastUpdated) + '</td>';
       tbody.appendChild(tr);
     });
