@@ -33,3 +33,6 @@ infra/cohort-keys.json
 
 # Fabric provisioning outputs (contain workspace/resource IDs — regenerate with setup-fabric.ps1)
 infra/data-layer/fabric-outputs.json
+
+# Legacy app publish output (binary is large; rebuild with app/legacy-system/publish.ps1)
+app/legacy-system/publish/
