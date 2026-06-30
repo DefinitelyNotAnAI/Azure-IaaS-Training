@@ -217,3 +217,199 @@ Disable storage public network access after the workshop is done:
 az storage account update --name <STORAGE_ACCOUNT_NAME> --resource-group workshop-app-rg `
   --subscription <SUBSCRIPTION_ID> --public-network-access Disabled
 ```
+
+---
+
+## Hackathon-specific failure modes (Parts 2 & 3)
+
+### Ingestion API returns 401 for all VM emitters
+
+**Symptom:** `part1-validate.html` shows "No signals found yet" for all slots. Ingestion API App Insights shows 401s.
+
+**Root cause:** `INGEST_KEYS_JSON` is empty (`{}`) on the Ingestion API — seed-cohort ran without `-IngestFunctionApp` or the step was skipped.
+
+**Fix:**
+
+```powershell
+$keys = Get-Content '.\infra\cohort-keys.json' | ConvertFrom-Json | ConvertTo-Json -Compress
+az functionapp config appsettings set `
+  --name <INGEST_FUNCTION_APP_NAME> `
+  --resource-group workshop-data-rg `
+  --settings "INGEST_KEYS_JSON=$keys"
+```
+
+Participants should see signals within 30 seconds of their VM emitter next polling cycle.
+
+---
+
+### Eventhouse shows no rows / zero telemetry
+
+**Symptom:** `SlotTelemetry_userXX()` returns empty in Fabric. Ingestion API shows 202 responses.
+
+**Diagnosis:** The Eventstream is either not configured or has lost its Event Hub connection.
+
+```powershell
+# Check if events are landing in Event Hub
+az eventhubs eventhub show `
+  --namespace-name <EH_NAMESPACE> `
+  --resource-group workshop-data-rg `
+  --name telemetry `
+  --query "messageRetentionInDays"  # confirms hub exists
+
+# Check Eventstream in Fabric portal:
+# Fabric workspace → Eventstreams → workshop-eventstream-telemetry → Live view
+# Should show events flowing through the pipeline
+```
+
+**Fix options:**
+1. If Eventstream shows errors on the Event Hub source: re-enter the Event Hub connection string in the Eventstream source settings.
+2. If Eventstream source is healthy but destination (Eventhouse) shows errors: delete and re-add the Eventhouse destination in the Eventstream editor.
+3. If Eventstream was never configured (preview API failed during setup): create it manually in Fabric portal → New Eventstream → Source: Event Hub `telemetry` (consumer group: `eventstream`) → Destination: Eventhouse → `workshop-db` → `Telemetry` table.
+
+---
+
+### Lakehouse (Tickets) shows no rows
+
+Same diagnosis path as Eventhouse above, but for the `support` Event Hub and `workshop-eventstream-support`.
+
+---
+
+### Fabric Data Agent returns "grounding failed" or "no data available"
+
+**Symptom:** Participant's Data Agent answers "I couldn't retrieve data from the data source."
+
+**Root cause:** The Data Agent's grounding is pointing at the wrong database or the KQL functions don't exist yet.
+
+**Diagnosis:**
+
+1. In the Data Agent editor, check that the grounding shows `workshop-eventhouse → workshop-db`.
+2. In the Eventhouse KQL editor, confirm the slot functions exist:
+
+```kql
+.show functions | where Name startswith 'SlotTelemetry_user'
+```
+
+If no functions appear, re-run `setup-fabric.ps1` (safe to re-run — idempotent):
+
+```powershell
+.\infra\data-layer\setup-fabric.ps1
+```
+
+**Per-participant fix:** If the grounding looks correct but answers are wrong, have the participant re-open the Data Agent, click the grounding item, and click **Refresh schema**. Then re-test.
+
+---
+
+### Foundry agent does not call the Fabric tool
+
+**Symptom:** Foundry agent answers "I don't have access to data" or gives generic answers without citing specific metrics.
+
+**Root cause:** The Microsoft Fabric tool is not connected to the participant's Data Agent, or the Fabric workspace connection is not added to the Foundry hub.
+
+**Facilitator fix (workspace connection):**
+1. Azure AI Foundry → your hub → Settings → Connected resources
+2. Add connection → Microsoft Fabric → select the workshop workspace
+3. Participants may need to refresh their agent after the connection is added
+
+**Participant fix (tool not configured):**
+1. In the Foundry agent editor, go to Tools
+2. Click **+ Add tool** → Microsoft Fabric → select their `workshop-agent-userXX` Data Agent
+3. Save and re-test
+
+---
+
+### VM Custom Script Extension shows "Failed"
+
+**Symptom:** Participant's VM blade → Extensions shows `InstallLegacyApp` with status **Failed**.
+
+**Diagnosis:**
+```powershell
+# Check extension detailed status
+az vm extension show `
+  --resource-group user01-rg `
+  --vm-name vm-user01 `
+  --name InstallLegacyApp `
+  --query "instanceView" -o json
+```
+
+Look for the error message in `statuses[].message`.
+
+**Common causes and fixes:**
+
+| Message | Cause | Fix |
+|---|---|---|
+| `Cannot find legacy-system.exe in ...` | AppBinaryUrl was unreachable when CSE ran | Re-run `install-legacy-app.ps1` for the affected slot with a verified URL |
+| `Service failed to start` | App configuration error | RDP into VM (via Bastion if peered), check `C:\legacy-system\appsettings.json` for correct values, check Windows Event Log for `LegacySystem` errors |
+| `Exit code: 1` (generic) | Script execution failed | Check CSE extension stdout/stderr in `az vm extension show` `instanceView` |
+
+**Re-run extension for a single slot:**
+```powershell
+.\infra\install-legacy-app.ps1 `
+  -SubscriptionId    '<SUBSCRIPTION_ID>' `
+  -IngestionEndpoint '<INGEST_URL>' `
+  -AppBinaryUrl      '<APP_BINARY_URL>' `
+  -InstallScriptUrl  '<INSTALL_SCRIPT_URL>' `
+  -IngestionKeysJson (Get-Content '.\infra\cohort-keys.json' -Raw) `
+  -SlotCount         1    # won't help — script iterates all slots
+```
+
+For a single slot, use az CLI directly:
+```powershell
+$slot = 'user01'
+$key  = (Get-Content '.\infra\cohort-keys.json' | ConvertFrom-Json).$slot
+$cmd  = "powershell -ExecutionPolicy Unrestricted -File install.ps1 -SlotId '$slot' -IngestionEndpoint '<INGEST_URL>' -IngestionKey '$key'"
+az vm extension set --resource-group "$slot-rg" --vm-name "vm-$slot" `
+  --name CustomScriptExtension --publisher Microsoft.Compute `
+  --settings "{\"fileUris\":[\"<INSTALL_SCRIPT_URL>\",\"<APP_BINARY_URL>\"]}" `
+  --protected-settings "{\"commandToExecute\": \"$cmd\"}"
+```
+
+---
+
+### Legacy app installed but not emitting (LegacySystem service Running, no Eventhouse rows)
+
+**Symptom:** Extension shows Provisioned. Service is Running. But `SlotTelemetry_userXX()` stays empty.
+
+**Diagnosis:**
+1. Confirm `IngestionEndpoint` in `C:\legacy-system\appsettings.json` is correct (RDP via Bastion or re-check install parameters).
+2. Check if the Ingestion API is returning errors for this slot: Ingestion API App Insights → Failures → filter by `x-team-key` header.
+3. Check the Windows Application event log on the VM for `LegacySystem` warnings.
+
+**Fix:** If `IngestionEndpoint` is wrong (blank or old URL), update `appsettings.json` on the VM and restart the service:
+
+```powershell
+# Via Bastion on the VM:
+$cfg = Get-Content 'C:\legacy-system\appsettings.json' | ConvertFrom-Json
+$cfg.IngestionEndpoint = '<CORRECT_INGEST_URL>'
+$cfg | ConvertTo-Json | Set-Content 'C:\legacy-system\appsettings.json'
+Restart-Service LegacySystem
+```
+
+---
+
+### Mid-event recovery: re-rotate ingestion keys for a slot
+
+If a participant somehow obtains another slot's ingestion key (e.g. from browser network tab), regenerate the key:
+
+```powershell
+# Generate a new key for user01
+function New-IngestKey { $b=[byte[]]::new(16); [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [BitConverter]::ToString($b).Replace('-','').ToLower() }
+$newKey = New-IngestKey
+
+# Update cohort-keys.json locally
+$keys = Get-Content '.\infra\cohort-keys.json' | ConvertFrom-Json
+$keys.user01 = $newKey
+$keys | ConvertTo-Json | Set-Content '.\infra\cohort-keys.json'
+
+# Push to Ingestion API
+az functionapp config appsettings set `
+  --name <INGEST_FUNCTION_APP_NAME> --resource-group workshop-data-rg `
+  --settings "INGEST_KEYS_JSON=$($keys | ConvertTo-Json -Compress)"
+
+# Update Assignments table
+az storage entity merge --account-name <STORAGE_ACCOUNT_NAME> --auth-mode login `
+  --table-name Assignments --partition-key '<SESSION_ID>' --row-key user01 `
+  --entity "ingestKey=$newKey"
+
+# Re-run extension on the VM with the new key
+# (use single-slot az vm extension set command from above)
+```
