@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part 3 — Self-Validation — Azure IaaS Hackathon</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Hackathon</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <h2 class="page-title">Part 3 — Self-Validation</h2>
+  <p class="page-subtitle">Compare what your agent found against the planted ground-truth. No score is recorded — this is a learning checkpoint.</p>
+
+  <div class="callout callout-info">
+    <strong>ℹ Ground-truth reveal</strong> — The cards below show the exact incident that was injected by the chaos engine for your slot. Compare each item to what your Foundry agent reported in Challenge 2. If your agent missed something, use the KQL hints to investigate and optionally refine your agent instructions.
+  </div>
+
+  <!-- ── Ground-truth panel ─────────────────────────────────────────────────── -->
+  <div id="state-no-groundtruth" style="display:none">
+    <div class="callout callout-warning">
+      <strong>⚠ Ground-truth not configured</strong> — The facilitator has not set the <code>incidentGroundTruth</code> field in <code>config.js</code> yet. This page will display the incident details once it is filled in before the event.
+    </div>
+  </div>
+
+  <div id="state-groundtruth">
+    <div class="card">
+      <h2>The planted incident</h2>
+      <table style="width:100%;font-size:0.875rem">
+        <tbody>
+          <tr><th style="width:35%;text-align:left">Incident ID</th><td><code id="gt-incident-id">—</code></td></tr>
+          <tr><th style="text-align:left">Injected at</th><td><span id="gt-injected-at">—</span></td></tr>
+          <tr><th style="text-align:left">Affected service</th><td><span id="gt-service">—</span></td></tr>
+          <tr><th style="text-align:left">Affected region</th><td><span id="gt-region">—</span></td></tr>
+          <tr><th style="text-align:left">Failure type</th><td><span id="gt-failure-type">—</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>What happened (full description)</h2>
+      <p id="gt-description" style="line-height:1.6"></p>
+      <div class="callout callout-info" style="margin-top:0.75rem">
+        <strong>Key insight to test:</strong> The incident created a <strong>blind spot</strong> — the system degradation was visible in telemetry but the cause (the deployment event) was not visible in the standard monitoring dashboard. Customers filed support tickets before the on-call team saw anything in their dashboards. Your agent should have surfaced this discrepancy.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Self-check: what did your agent find?</h2>
+      <p>For each item below, compare your agent's answers from Challenge 2 (use case 4 in particular) to the ground-truth. Be honest — this is for learning only.</p>
+      <table style="width:100%;font-size:0.875rem">
+        <thead>
+          <tr><th style="width:50%">Item</th><th style="width:25%">Ground-truth</th><th style="width:25%">Your agent said</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Identified the affected service</td>
+            <td><code id="check-service">—</code></td>
+            <td><em style="color:#605e5c">write your answer here</em></td>
+          </tr>
+          <tr>
+            <td>Identified the incident time window (±10 min)</td>
+            <td><span id="check-time">—</span></td>
+            <td><em style="color:#605e5c">write your answer here</em></td>
+          </tr>
+          <tr>
+            <td>Cited the IncidentId</td>
+            <td><code id="check-incidentid">—</code></td>
+            <td><em style="color:#605e5c">write your answer here</em></td>
+          </tr>
+          <tr>
+            <td>Named at least one affected customer tenant</td>
+            <td>Yes — at least 1 in Tickets data</td>
+            <td><em style="color:#605e5c">write your answer here</em></td>
+          </tr>
+          <tr>
+            <td>Identified the blind spot (tickets before dashboard alert)</td>
+            <td>Yes — early-warning pattern in data</td>
+            <td><em style="color:#605e5c">write your answer here</em></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Verify in your data</h2>
+      <p>If your agent missed the root cause, use this KQL snippet to find it directly in your Eventhouse — then compare what you found to what the agent returned:</p>
+      <pre class="kql-starter">// Find the planted incident directly
+SlotTelemetry_<<SLOT>>()
+| where IncidentId != ''
+| summarize Count = count(), AvgLatencyMs = avg(LatencyMs),
+    FirstSeen = min(Timestamp), LastSeen = max(Timestamp)
+    by IncidentId, Service, IsAnomaly
+| order by FirstSeen asc</pre>
+
+      <pre class="kql-starter">// Which tickets were tagged with that IncidentId?
+SlotTickets_<<SLOT>>()
+| where IncidentId != ''
+| summarize TicketCount = count(),
+    Tenants = make_set(CustomerTenant),
+    FirstTicket = min(Timestamp)
+    by IncidentId
+| order by FirstTicket asc</pre>
+    </div>
+
+    <div class="card">
+      <h2>Stretch — Recommend remediation</h2>
+      <p>Now that your agent (and you) know what happened, send this final prompt:</p>
+      <blockquote style="background:#f5f5f5;border-left:3px solid #0078d4;padding:0.5rem 1rem;margin:0.75rem 0">
+        "Based on everything you've found — the root cause, the affected customers, and the blind spot in monitoring — what are your top 3 recommended actions for the application owner to take right now and to prevent recurrence?"
+      </blockquote>
+      <p>The agent cannot <em>execute</em> these actions (read-only by design), but its recommendations should be specific and grounded in the data it retrieved — not generic advice. Good recommendations will reference the specific service, the monitoring gap, and the customer impact tier.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="callout callout-hold">
+    <strong>⏸ Hold for end-of-day debrief</strong>
+    Once you've completed the self-check (even if your agent missed some items), click <strong>Complete</strong> above. The facilitator will run a debrief covering what the chaos engine injected, patterns seen across all slots, and what the agent got right and wrong.
+  </div>
+
+  <div class="page-nav">
+    <a href="part3-prompts.html" class="btn btn-secondary">← Agent Prompts</a>
+    <a href="wrapup.html" class="btn btn-primary">Continue to Wrap-up →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderStatusRow('part3_validate');
+
+    var p    = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+    var cfg  = window.APP_CONFIG || {};
+    var gt   = cfg.incidentGroundTruth || {};
+
+    // Inject slot into KQL blocks
+    document.querySelectorAll('.kql-starter').forEach(function (el) {
+      el.textContent = el.textContent.replace(/<<SLOT>>/g, slot);
+    });
+
+    // Render ground-truth or "not configured" state
+    if (!gt.incidentId) {
+      document.getElementById('state-no-groundtruth').style.display = '';
+      document.getElementById('state-groundtruth').style.display    = 'none';
+      return;
+    }
+
+    // Populate ground-truth fields
+    function setText(id, val) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = val || '—';
+    }
+
+    setText('gt-incident-id',   gt.incidentId);
+    setText('gt-injected-at',   gt.injectedAt ? new Date(gt.injectedAt).toLocaleTimeString() + ' UTC' : 'See facilitator');
+    setText('gt-service',       gt.affectedService);
+    setText('gt-region',        gt.affectedRegion);
+    setText('gt-failure-type',  gt.failureType);
+
+    var descEl = document.getElementById('gt-description');
+    if (descEl) descEl.textContent = gt.description || '';
+
+    // Populate self-check reference column
+    setText('check-service',    gt.affectedService);
+    setText('check-time',       gt.injectedAt ? new Date(gt.injectedAt).toLocaleTimeString() + ' ±10 min' : 'See facilitator');
+    setText('check-incidentid', gt.incidentId);
+  });
+</script>
+</body>
+</html>

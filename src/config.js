@@ -14,6 +14,24 @@ window.APP_CONFIG = {
   // Leave empty until the shared data layer is deployed.
   ingestionEndpoint:  '',   // e.g. 'https://workshop-ingest-XXXX.azurewebsites.net'
   fabricWorkspaceUrl: '',   // e.g. 'https://app.fabric.microsoft.com/groups/XXXX'
+  foundryProjectUrl:  '',   // e.g. 'https://ai.azure.com/build/XXXX' (for Part 3)
+
+  // ── Planted incident ground-truth (set by facilitator before the event) ────
+  // Revealed on part3-validate.html for self-validation (no score recorded).
+  // Set these values once the legacy app + chaos engine (Phase 7) is finalised.
+  incidentGroundTruth: {
+    incidentId:      'INC-BADDEPLOYMENT-01',
+    injectedAt:      '',                        // ISO timestamp — set before event
+    affectedService: 'OrderService',
+    affectedRegion:  'eastus2',
+    failureType:     'LatencySpike',
+    description:     'A simulated "bad deployment" increased OrderService latency 4× ' +
+                     'and raised the error rate. This triggered a burst of ' +
+                     '"slow / timeout" support tickets from affected tenants. ' +
+                     'Crucially, the deployment event was NOT visible in the standard ' +
+                     'monitoring dashboard — creating a blind spot between the ' +
+                     'objective telemetry anomaly and the subjective customer reports.',
+  },
 
   // ── Hackathon structure ──────────────────────────────────────────────────────
   // Three parts that make up the day-long hackathon. Each part's modules list
