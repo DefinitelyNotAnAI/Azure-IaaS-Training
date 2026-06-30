@@ -1,0 +1,19 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+
+    "AZURE_CLIENT_ID": "",
+
+    "STORAGE_ACCOUNT_NAME": "<wkingest-SUFFIX>",
+
+    "EVENT_HUB_NAMESPACE": "<workshop-eh-SUFFIX>.servicebus.windows.net",
+    "EVENT_HUB_TELEMETRY_NAME": "telemetry",
+    "EVENT_HUB_SUPPORT_NAME": "support",
+
+    "INGEST_KEYS_JSON": "{\"user01\":\"<key-for-user01>\"}",
+
+    "SESSION_CODE": "<same-session-code-as-participant-tracking-api>"
+  }
+}

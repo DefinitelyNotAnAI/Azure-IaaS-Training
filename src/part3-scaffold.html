@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part 3 — Agent Scaffold — Azure IaaS Hackathon</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Hackathon</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Links banner -->
+  <div id="links-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your slot:</strong> <span id="banner-slot"></span></span>
+      <span><strong>Data Agent:</strong> <code id="banner-agent-name"></code></span>
+    </div>
+    <a id="banner-foundry-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm" style="margin-right:0.5rem">Open Foundry →</a>
+    <a id="banner-fabric-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Fabric →</a>
+  </div>
+
+  <h2 class="page-title">Part 3 — Agent Scaffold</h2>
+  <p class="page-subtitle">Create a Foundry agent and connect it to your Fabric Data Agent via the Microsoft Fabric tool.</p>
+
+  <div class="card">
+    <h2>Architecture recap</h2>
+    <p>Here's what you're about to build and how the pieces connect:</p>
+    <ol>
+      <li><strong>Your Fabric Data Agent</strong> (built in Part 2) — a natural-language interface grounded on your slot's Eventhouse data. It translates questions → KQL → answers.</li>
+      <li><strong>Your Foundry agent</strong> (this challenge) — the reasoning layer. It receives your questions, calls your Data Agent via the <strong>Microsoft Fabric tool</strong>, correlates the answers across the 5 use cases, and generates insights.</li>
+    </ol>
+    <p>The Foundry agent doesn't run KQL directly — it delegates data retrieval to your Data Agent and focuses on reasoning, correlation, and explaining "what this means for the customer."</p>
+  </div>
+
+  <div class="card">
+    <h2>Prerequisite — Foundry project</h2>
+    <p>You need access to an Azure AI Foundry project to create agents. The facilitator will provide:</p>
+    <ul>
+      <li>The URL to the shared Foundry project (<strong>Open Foundry</strong> button above, or ask the facilitator).</li>
+      <li>Confirmation that a Fabric workspace <strong>connection</strong> has been added to the project (required for the Fabric tool).</li>
+    </ul>
+    <div class="callout callout-info">
+      <strong>New to Foundry?</strong> Azure AI Foundry is the portal for building and hosting AI agents. Think of it as the Azure portal, but for AI agents. Your agents run on an Azure OpenAI deployment in the shared Foundry hub.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Must-do — Create your Foundry agent (portal path)</h2>
+    <ol class="lab-steps">
+      <li>Open <strong>Azure AI Foundry</strong> at <a href="https://ai.azure.com" target="_blank" rel="noopener noreferrer">ai.azure.com</a> (or use the button above).</li>
+      <li>In the left nav, click <strong>Agents</strong>, then click <strong>+ New agent</strong>.</li>
+      <li>
+        Give your agent a name: <strong>workshop-agent-<span id="agent-name-1">userXX</span></strong>.
+        Select the shared <strong>gpt-4o</strong> (or the model the facilitator specifies) as the deployment.
+      </li>
+      <li>
+        Under <strong>Instructions</strong>, paste the starter system prompt below (copy button provided). You'll refine it in Challenge 2.
+      </li>
+      <li>
+        Under <strong>Tools</strong>, click <strong>+ Add</strong> → <strong>Microsoft Fabric</strong>.
+        <ul>
+          <li>Select the Fabric workspace connection (the facilitator will have pre-connected the workspace).</li>
+          <li>Under <em>Select Data Agent</em>, find and select <strong>workshop-agent-<span id="agent-name-2">userXX</span></strong> — the Data Agent you created in Part 2.</li>
+        </ul>
+      </li>
+      <li>Click <strong>Save</strong>.</li>
+    </ol>
+    <div class="callout callout-info" style="margin-top:0.75rem">
+      <strong>CLI alternative (azd):</strong> If you prefer code-first, the facilitator can provide the scaffold command. The portal path above is equivalent and doesn't require any local tooling.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Starter system prompt</h2>
+    <p>Copy this into your agent's <em>Instructions</em> field. You'll refine it in Challenge 2 once you see how the agent behaves:</p>
+    <pre id="system-prompt">You are an AI agent that helps an application owner understand how system behaviour is driving customer-reported issues, and what to do about it.
+
+You have access to a data tool called Microsoft Fabric that connects to the workshop data layer for slot <<SLOT>>. Use it to retrieve:
+- Telemetry data: per-operation metrics (latency, errors, throughput) from the legacy system
+- Support ticket data: customer-reported issues describing their experience
+
+When answering questions:
+1. Always retrieve relevant data from your Fabric tool before answering.
+2. Correlate telemetry patterns with ticket patterns — don't just describe one plane in isolation.
+3. Identify whether customer complaints correspond to real system anomalies.
+4. Call out discrepancies: if tickets exist without telemetry anomalies (blind spot) or vice versa.
+5. Be specific: name services, timestamps, affected tenants, and IncidentIds where available.
+6. Conclude with a clear statement of what happened and what it means for the customer.</pre>
+    <button class="btn btn-secondary" id="copy-prompt-btn" style="margin-top:0.5rem">Copy system prompt</button>
+  </div>
+
+  <div class="card">
+    <h2>Must-do — Test the Fabric tool connection</h2>
+    <p>In the Foundry agent playground (the chat panel on the right), send this test question to verify your agent can reach your Fabric Data Agent:</p>
+    <blockquote style="background:#f5f5f5;border-left:3px solid #0078d4;padding:0.5rem 1rem;margin:0.75rem 0">
+      "What was the average latency in the last 2 hours, and how many support tickets were raised in the same window?"
+    </blockquote>
+    <p>A working response will cite specific numbers pulled from your Eventhouse + Lakehouse data. If the agent responds with "I don't have access to data" or similar, the Fabric tool is not connected — check that you selected your Data Agent correctly in step 5.</p>
+  </div>
+
+  <a class="link-card" href="https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/agents" target="_blank" rel="noopener noreferrer">
+    <span class="link-card-icon">📖</span>
+    <div class="link-card-body">
+      <div class="link-card-title">Azure AI Foundry — Agents overview</div>
+      <div class="link-card-desc">Concepts, supported models, tools, and the agent lifecycle.</div>
+    </div>
+  </a>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="page-nav">
+    <a href="part2-dataagent.html" class="btn btn-secondary">← Part 2 — Data Agent</a>
+    <a href="part3-prompts.html" class="btn btn-primary">Continue to Agent Prompts →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderStatusRow('part3_scaffold');
+
+    var p          = WorkshopApp.loadParticipant();
+    var slot       = (p && p.assignedSlot) || 'userXX';
+    var cfg        = window.APP_CONFIG || {};
+    var fabricUrl  = cfg.fabricWorkspaceUrl || '';
+    var foundryUrl = cfg.foundryProjectUrl  || 'https://ai.azure.com';
+
+    var banner   = document.getElementById('links-banner');
+    var slotEl   = document.getElementById('banner-slot');
+    var agentEl  = document.getElementById('banner-agent-name');
+    var fabricEl = document.getElementById('banner-fabric-link');
+    var foundryEl = document.getElementById('banner-foundry-link');
+
+    if (slotEl)  slotEl.textContent  = slot;
+    if (agentEl) agentEl.textContent = 'workshop-agent-' + slot;
+    if (fabricEl && fabricUrl) fabricEl.href = fabricUrl;
+    if (foundryEl) foundryEl.href = foundryUrl;
+    if (banner) banner.style.display = 'flex';
+
+    ['agent-name-1','agent-name-2'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = slot;
+    });
+
+    // Inject slot into system prompt
+    var promptEl = document.getElementById('system-prompt');
+    if (promptEl) promptEl.textContent = promptEl.textContent.replace(/<<SLOT>>/g, slot);
+
+    // Copy prompt button
+    var copyBtn = document.getElementById('copy-prompt-btn');
+    if (copyBtn && promptEl) {
+      copyBtn.addEventListener('click', function () {
+        navigator.clipboard.writeText(promptEl.textContent).then(function () {
+          copyBtn.textContent = '✓ Copied';
+          setTimeout(function () { copyBtn.textContent = 'Copy system prompt'; }, 2000);
+        });
+      });
+    }
+  });
+</script>
+</body>
+</html>

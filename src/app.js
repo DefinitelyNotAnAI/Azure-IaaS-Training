@@ -6,7 +6,16 @@
 
   const STORAGE_KEY    = 'iaas-workshop-participant';
   const TAP_KEY        = 'iaas-workshop-tap';   // sessionStorage — cleared when tab closes
-  const TRACKED_MODULES = ['onboarding', 'module1', 'module2', 'module3', 'wrapup'];
+  const TRACKED_MODULES = [
+    // Part 1 — Infrastructure
+    'onboarding', 'module1', 'module3', 'part1_validate',
+    // Part 2 — Data Layer
+    'part2_signals', 'part2_kql', 'part2_correlation', 'part2_dataagent',
+    // Part 3 — AI Agent
+    'part3_scaffold', 'part3_prompts', 'part3_validate',
+    // Wrap-up
+    'wrapup',
+  ];
   const STATUS_LABELS  = {
     not_started:   'Not started',
     started:       'Started',
@@ -23,11 +32,23 @@
 
   function defaultStatuses() {
     return {
-      onboarding: 'not_started',
-      module1:    'not_started',
-      module2:    'not_started',
-      module3:    'not_started',
-      wrapup:     'not_started',
+      // Part 1 — Infrastructure
+      onboarding:        'not_started',
+      module1:           'not_started',
+      module2:           'not_started',  // optional; instructor-led peering demo
+      module3:           'not_started',
+      part1_validate:    'not_started',
+      // Part 2 — Data Layer
+      part2_signals:     'not_started',
+      part2_kql:         'not_started',
+      part2_correlation: 'not_started',
+      part2_dataagent:   'not_started',
+      // Part 3 — AI Agent
+      part3_scaffold:    'not_started',
+      part3_prompts:     'not_started',
+      part3_validate:    'not_started',
+      // Wrap-up
+      wrapup:            'not_started',
     };
   }
 
@@ -239,21 +260,21 @@
     const bar = document.getElementById('progress-bar');
     if (!bar) return;
 
-    const p = loadParticipant();
-    const segments = [
-      { key: 'onboarding', label: 'Sign In' },
-      { key: 'module1',    label: 'Networking' },
-      { key: 'module2',    label: 'Peering' },
-      { key: 'module3',    label: 'Compute' },
-    ];
+    const p        = loadParticipant();
+    const parts    = ((window.APP_CONFIG || {}).hackathonParts) || [];
+    const statuses = p ? (p.moduleStatuses || {}) : {};
 
     bar.innerHTML = '';
-    segments.forEach(function (seg) {
-      const status = p ? ((p.moduleStatuses || {})[seg.key] || 'not_started') : 'not_started';
-      const div    = document.createElement('div');
-      div.className   = 'progress-segment status-bg-' + status;
-      div.textContent = seg.label;
-      div.title       = seg.label + ': ' + (STATUS_LABELS[status] || status);
+    parts.forEach(function (part) {
+      var partStatuses = part.modules.map(function (key) { return statuses[key] || 'not_started'; });
+      var allComplete  = partStatuses.every(function (s) { return s === 'complete'; });
+      var anyActive    = partStatuses.some(function (s) { return s !== 'not_started'; });
+      var aggStatus    = allComplete ? 'complete' : anyActive ? 'started' : 'not_started';
+
+      var div = document.createElement('div');
+      div.className   = 'progress-segment status-bg-' + aggStatus;
+      div.textContent = part.label;
+      div.title       = part.label + ': ' + (STATUS_LABELS[aggStatus] || aggStatus);
       bar.appendChild(div);
     });
   }

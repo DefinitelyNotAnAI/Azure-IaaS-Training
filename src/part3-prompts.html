@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part 3 — Agent Prompts — Azure IaaS Hackathon</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Hackathon</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Links banner -->
+  <div id="links-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your slot:</strong> <span id="banner-slot"></span></span>
+    </div>
+    <a id="banner-foundry-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Foundry →</a>
+  </div>
+
+  <h2 class="page-title">Part 3 — Agent Prompts</h2>
+  <p class="page-subtitle">Run your agent through the 5 use cases and investigate the planted incident scenario.</p>
+
+  <div class="card">
+    <h2>The 5 use cases</h2>
+    <p>Your agent must be able to answer questions across five types of analysis. Work through them in order — they build on each other and together they answer the key question: <em>"What happened, who was affected, and how do we know?"</em></p>
+    <table style="width:100%;font-size:0.875rem">
+      <thead>
+        <tr><th style="width:30%">Use case</th><th>The question it answers</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>1. Root cause &amp; correlation</strong></td><td>What system event caused the support ticket spike?</td></tr>
+        <tr><td><strong>2. Noise vs signal</strong></td><td>Are these tickets all describing the same underlying problem?</td></tr>
+        <tr><td><strong>3. Customer impact</strong></td><td>Which customers or tenants were affected, and how severely?</td></tr>
+        <tr><td><strong>4. Change impact detection</strong></td><td>Did a deployment or configuration change correlate with the issue?</td></tr>
+        <tr><td><strong>5. Blind spot detection</strong></td><td>Is there a mismatch between what monitoring shows and what customers report?</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Use case 1 — Root cause &amp; correlation</h2>
+    <p>Send this prompt to your Foundry agent in the playground. Note: the agent should retrieve correlated data from your Fabric Data Agent and identify a specific spike window.</p>
+    <blockquote style="background:#f5f5f5;border-left:3px solid #0078d4;padding:0.5rem 1rem;margin:0.75rem 0">
+      "I'm seeing a spike in support tickets from customers complaining about slowness. Look at the last few hours of data and tell me: was there a corresponding latency spike in the system telemetry? If so, when did it start, which service was affected, and how many customers filed tickets during that window?"
+    </blockquote>
+    <p><strong>What good looks like:</strong> The agent names a specific time window, a specific service, cites the average latency during the spike, and the count of tickets. It may also mention an <code>IncidentId</code> if the chaos engine tagged the events.</p>
+  </div>
+
+  <div class="card">
+    <h2>Use case 2 — Noise vs signal</h2>
+    <blockquote style="background:#f5f5f5;border-left:3px solid #0078d4;padding:0.5rem 1rem;margin:0.75rem 0">
+      "Looking at the support tickets from the last 2 hours, are there multiple distinct issues or are they all describing the same underlying problem? Group similar tickets and tell me if there is one root cause or several."
+    </blockquote>
+    <p><strong>What good looks like:</strong> The agent clusters tickets by description/category and concludes "these are all describing the same incident" or identifies 2–3 distinct clusters. If your Data Agent's instructions mention <code>IncidentId</code>, the agent should use it to group related tickets.</p>
+    <div class="callout callout-info" style="margin-top:0.75rem">
+      <strong>Tip:</strong> If the agent gives a vague answer, refine your Data Agent's instructions to explicitly describe the <code>IncidentId</code> field and its role in linking tickets to incidents.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Use case 3 — Customer impact</h2>
+    <blockquote style="background:#f5f5f5;border-left:3px solid #0078d4;padding:0.5rem 1rem;margin:0.75rem 0">
+      "Based on the support tickets during the last major latency spike, which customer tenants were most affected? List them by ticket volume and tell me whether any tenant filed tickets across multiple incidents or just one."
+    </blockquote>
+    <p><strong>What good looks like:</strong> The agent lists specific tenant names, their ticket counts, and ideally notes whether any tenant appears in multiple incident windows (repeat impact). This demonstrates the agent connecting system issues to customer experience.</p>
+  </div>
+
+  <div class="card">
+    <h2>Use case 4 — Change impact detection</h2>
+    <blockquote style="background:#f5f5f5;border-left:3px solid #0078d4;padding:0.5rem 1rem;margin:0.75rem 0">
+      "Was there any unusual system event — like a deployment, configuration change, or error burst — that preceded the support ticket spike? Look for events in the telemetry that could explain what triggered the customer complaints."
+    </blockquote>
+    <p><strong>What good looks like:</strong> The agent identifies the anomaly window from Telemetry (high latency, elevated <code>ErrorCount</code>, <code>IsAnomaly = true</code>) and connects it temporally to the ticket burst. Ideally it surfaces the <code>IncidentId</code> of the planted "bad deployment" event.</p>
+    <div class="callout callout-info" style="margin-top:0.75rem">
+      <strong>This is the key use case.</strong> The planted root cause in this hackathon is a simulated "bad deployment" — the agent should identify the anomaly window and link it to the customer tickets. Keep this answer — you'll compare it to the ground-truth in Challenge 3.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Use case 5 — Blind spot detection</h2>
+    <blockquote style="background:#f5f5f5;border-left:3px solid #0078d4;padding:0.5rem 1rem;margin:0.75rem 0">
+      "Were there any time windows where customers filed support tickets but the telemetry showed no anomaly — i.e., a customer perception problem that monitoring missed? Conversely, were there any windows where telemetry showed degradation but no tickets were filed yet — an early warning sign?"
+    </blockquote>
+    <p><strong>What good looks like:</strong> The agent runs both the blind-spot query (<code>SlotBlindSpots_userXX</code>) and the early-warning query and reports findings for each pattern. This demonstrates the agent understanding the difference between objective and subjective data planes.</p>
+  </div>
+
+  <div class="card">
+    <h2>Stretch — Refine your system prompt based on results</h2>
+    <p>After running all 5 use cases, review your agent's answers and identify gaps. Common improvements:</p>
+    <ul>
+      <li><strong>Agent gave vague answers</strong>: Add more context to instructions about what <code>IncidentId</code> means and how to use it.</li>
+      <li><strong>Agent didn't use the Fabric tool</strong>: Add "Always call your Fabric data tool before answering any question about system behaviour or customer tickets" to instructions.</li>
+      <li><strong>Agent named wrong service</strong>: Add the service names from your Telemetry to the instructions so the agent knows your system's vocabulary.</li>
+      <li><strong>Agent didn't connect the two planes</strong>: Add "Always compare telemetry data and support ticket data together, even when only one is mentioned in the question" to instructions.</li>
+    </ul>
+    <p>After refining, re-run use case 4 (the key one). If the agent now correctly identifies the anomaly window and its customer impact, you're ready for Challenge 3.</p>
+  </div>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="page-nav">
+    <a href="part3-scaffold.html" class="btn btn-secondary">← Agent Scaffold</a>
+    <a href="part3-validate.html" class="btn btn-primary">Continue to Self-Validation →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderStatusRow('part3_prompts');
+
+    var cfg       = window.APP_CONFIG || {};
+    var foundryUrl = cfg.foundryProjectUrl || 'https://ai.azure.com';
+    var p    = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+
+    var banner   = document.getElementById('links-banner');
+    var slotEl   = document.getElementById('banner-slot');
+    var foundryEl = document.getElementById('banner-foundry-link');
+    if (slotEl)  slotEl.textContent = slot;
+    if (foundryEl) foundryEl.href   = foundryUrl;
+    if (banner) banner.style.display = 'flex';
+  });
+</script>
+</body>
+</html>

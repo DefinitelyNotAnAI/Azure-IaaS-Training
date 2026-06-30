@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Module 3 — Compute — Azure IaaS Workshop</title>
+  <title>Module 3 — Compute — Azure IaaS Hackathon</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -32,16 +32,16 @@
   </div>
 
   <h2 class="page-title">Module 3 — Compute</h2>
-  <p class="page-subtitle">Deploy a Windows Server VM into your spoke VNet — no public IP, accessed only via hub Bastion.</p>
+  <p class="page-subtitle">Deploy a Windows Server VM into your spoke VNet. The legacy support app will auto-install on your VM and begin emitting telemetry and support signals.</p>
 
   <div class="card">
     <h2>What you're about to do</h2>
-    <p>You will deploy a <strong>Windows Server 2022 VM</strong> into the <strong>workload</strong> subnet of your spoke VNet. The VM has no public IP address — access is only via Azure Bastion in the hub, simulating how enterprise IaaS VMs are deployed in production.</p>
+    <p>You will deploy a <strong>Windows Server 2022 VM</strong> into the <strong>workload</strong> subnet of your spoke VNet. The VM has no public IP address, simulating how enterprise IaaS VMs are deployed in production.</p>
     <ul>
-      <li>Create VM <strong><span id="vm-name-inline"></span></strong> (Standard_D2ads_v7, Windows Server 2022).</li>
+      <li>Create VM <strong><span id="vm-name-inline"></span></strong> (Standard_D2ads_v5, Windows Server 2022).</li>
       <li>Attach it to your spoke VNet's <strong>workload</strong> subnet.</li>
-      <li>Disable public IP (Bastion-only access).</li>
-      <li>Connect via Azure Bastion and verify network connectivity to the hub.</li>
+      <li>Disable public IP.</li>
+      <li>After deployment, the facilitator will install the <strong>legacy support app</strong> on your VM via a VM Extension — no action required from you. The app will begin emitting telemetry and support signals to the shared data layer automatically.</li>
     </ul>
   </div>
 
@@ -82,7 +82,7 @@
           <li>Image: <strong>Windows Server 2022 Datacenter: Azure Edition — x64 Gen2</strong><br>
             If not shown, click <em>See all images</em> and search for <em>Windows Server 2022</em>.</li>
           <li>VM architecture: <strong>x64</strong> (leave default)</li>
-          <li>Size: <strong>Standard_D2ads_v7</strong> (2 vCPU, 8 GiB) — click <em>See all sizes</em> if needed and search <em>D2ads</em>.</li>
+          <li>Size: <strong>Standard_D2ads_v5</strong> (2 vCPU, 8 GiB) — click <em>See all sizes</em> if needed and search <em>D2ads</em>.</li>
         </ul>
         <strong>Administrator account</strong>:
         <ul>
@@ -145,16 +145,13 @@
         On the <em>Tags</em> tab — no changes. Click <strong>Review + create</strong>.
       </li>
       <li>
-        On <em>Review + create</em>: verify Region = <strong>East US 2</strong>, Image = <strong>Windows Server 2022</strong>, Size = <strong>Standard_D2ads_v7</strong>, Public IP = <strong>(none)</strong>, and VNet = your spoke VNet. Click <strong>Create</strong>. Deployment takes 2–4 minutes.
+        On <em>Review + create</em>: verify Region = <strong>East US 2</strong>, Image = <strong>Windows Server 2022</strong>, Size = <strong>Standard_D2ads_v5</strong>, Public IP = <strong>(none)</strong>, and VNet = your spoke VNet. Click <strong>Create</strong>. Deployment takes 2–4 minutes.
       </li>
       <li>
-        Once deployed, open the VM blade and click <strong>Connect</strong> → <strong>Bastion</strong>. Sign in with <strong>workshopadmin</strong> and your password.
+        Once deployed, click <strong>Go to resource</strong> on the deployment notification. Confirm the VM blade shows <strong>Running</strong> in the status field.
         <div class="callout callout-info" style="margin-top:0.6rem">
-          <strong>Bastion is in the hub</strong>: The hub-vnet must be peered to your spoke (Module 2) before Bastion can reach your VM. If peering is not yet <em>Connected</em>, complete Module 2 first.
+          <strong>Optional — Bastion access:</strong> If your spoke is peered to the hub (see Module 2), you can click <strong>Connect → Bastion</strong> and sign in with <strong>workshopadmin</strong> and your password. This is not required for the hackathon to continue.
         </div>
-      </li>
-      <li>
-        From the VM command prompt, run <code>ping 10.0.2.1</code> to test connectivity into the hub's shared-services subnet.
       </li>
     </ol>
 
@@ -175,18 +172,33 @@
   </div>
 
   <div class="card">
+    <h2>Verify the legacy app installed</h2>
+    <p>After you mark Module 3 as complete, the facilitator will run a script to install the legacy support app on all participant VMs via a <strong>Custom Script Extension</strong>. This happens during the next regroup break — no action required from you.</p>
+    <p>To verify the installation succeeded:</p>
+    <ol class="lab-steps">
+      <li>In the Azure portal, open your VM blade (<strong><span id="verify-vm-name"></span></strong>).</li>
+      <li>In the left menu, under <em>Settings</em>, click <strong>Extensions + applications</strong>.</li>
+      <li>Find the extension named <strong>InstallLegacyApp</strong>. Its status should show <strong>Provisioning succeeded</strong>.</li>
+      <li>If the status shows <em>Failed</em> or the extension is not listed, raise your hand — the facilitator will re-run the install script for your slot.</li>
+    </ol>
+    <div class="callout callout-info">
+      <strong>What the app does:</strong> The legacy support app simulates an operational system that accepts inbound requests, experiences injected failures at scheduled times, and emits two types of signals to the shared data layer: <strong>telemetry</strong> (objective — latency, errors, throughput) and <strong>support tickets</strong> (subjective — simulated user complaints). Parts 2 and 3 will analyse these signals.
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Your progress</h2>
     <div id="status-row"></div>
   </div>
 
   <div class="callout callout-hold">
     <strong>⏸ Hold for regroup</strong>
-    After connecting to your VM via Bastion, click <strong>Complete</strong> above. Wait for the instructor to regroup before moving to the Wrap-up.
+    Once your VM shows <strong>Running</strong>, click <strong>Complete</strong> above and wait. The facilitator will install the legacy app on all VMs during this break, then direct everyone to the Part 1 Validation page.
   </div>
 
   <div class="page-nav">
     <a href="module2.html" class="btn btn-secondary">← Module 2 — Peering</a>
-    <a href="wrapup.html" class="btn btn-primary">Continue to Wrap-up →</a>
+    <a href="part1-validate.html" class="btn btn-primary">Continue to Part 1 Validation →</a>
   </div>
 </main>
 
@@ -212,6 +224,8 @@
     if (rgEl) rgEl.textContent = rg;
     var vnetEl = document.getElementById('step-vnet-name');
     if (vnetEl) vnetEl.textContent = 'vnet-' + slot;
+    var verifyEl = document.getElementById('verify-vm-name');
+    if (verifyEl) verifyEl.textContent = 'vm-' + slot;
   });
 </script>
 </body>

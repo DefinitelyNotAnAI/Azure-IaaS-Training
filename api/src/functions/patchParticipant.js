@@ -3,7 +3,14 @@ const { app } = require('@azure/functions');
 const { getTableClient } = require('../shared/tables');
 const { verifySessionCode } = require('../shared/auth');
 
-const VALID_MODULES  = new Set(['onboarding', 'module1', 'module2', 'module3', 'wrapup']);
+const VALID_MODULES  = new Set([
+  // Part 1 — Infrastructure
+  'onboarding', 'module1', 'module2', 'module3', 'part1_validate', 'wrapup',
+  // Part 2 — Data Layer
+  'part2_signals', 'part2_kql', 'part2_correlation', 'part2_dataagent',
+  // Part 3 — AI Agent
+  'part3_scaffold', 'part3_prompts', 'part3_validate',
+]);
 const VALID_STATUSES = new Set(['not_started', 'started', 'complete', 'need_help', 'watching_only']);
 
 app.http('patchParticipant', {

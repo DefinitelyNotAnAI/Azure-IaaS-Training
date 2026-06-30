@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part 2 — Data Agent — Azure IaaS Hackathon</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="page-wrap">
+    <h1>Azure IaaS Hackathon</h1>
+    <div class="participant-meta">
+      <span id="participant-name"></span>
+      <a href="#" id="change-participant" class="change-link">Change</a>
+    </div>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div id="progress-bar" class="progress-bar"></div>
+
+  <!-- Data layer banner -->
+  <div id="datalayer-banner" class="assignment-banner" style="display:none">
+    <div class="assignment-banner-fields">
+      <span><strong>Your slot:</strong> <span id="banner-slot"></span></span>
+    </div>
+    <a id="banner-fabric-link" href="#" target="_blank" rel="noopener noreferrer"
+       class="btn btn-secondary btn-sm">Open Fabric Workspace →</a>
+  </div>
+
+  <h2 class="page-title">Part 2 — Data Agent</h2>
+  <p class="page-subtitle">Build your own Fabric Data Agent grounded on your slot's data — the NL-to-KQL layer your Part 3 agent will call.</p>
+
+  <div class="card">
+    <h2>What is a Fabric Data Agent?</h2>
+    <p>A Fabric Data Agent is a natural-language interface grounded on one or more data sources (Eventhouse, Lakehouse, etc.). When asked a question in plain language, it generates and runs a KQL or SQL query against the grounded data and returns an answer.</p>
+    <p>In Part 3 your <strong>Foundry agent</strong> will connect to your Data Agent using the <strong>Microsoft Fabric tool</strong>. The Foundry agent handles reasoning, correlation, and recommendations — the Data Agent handles data retrieval. Keeping them separate means you can improve data queries without touching the agent's reasoning logic.</p>
+    <p>In this challenge you will create your own Data Agent grounded on your slot's functions, test it, and optionally refine its instructions for better answers.</p>
+  </div>
+
+  <div class="card">
+    <h2>Must-do — Create your Data Agent</h2>
+    <ol class="lab-steps">
+      <li>
+        In the Fabric workspace, click <strong>+ New item</strong> and select <strong>Data Agent</strong> (or find it under the <em>AI + BI</em> section).
+      </li>
+      <li>
+        Name your agent: <strong>workshop-agent-<span id="agent-name-slot">userXX</span></strong> (use your slot to distinguish it from other participants' agents).
+      </li>
+      <li>
+        Click <strong>Add data source</strong> → <strong>Eventhouse</strong> → select <strong>workshop-eventhouse</strong> → <strong>workshop-db</strong>.
+      </li>
+      <li>
+        In the <em>Select items to include</em> panel, add:
+        <ul>
+          <li>The <strong>Telemetry</strong> table</li>
+          <li>Your slot functions: <strong>SlotTelemetry_<span id="fn-slot-1">userXX</span></strong>, <strong>SlotTickets_<span id="fn-slot-2">userXX</span></strong></li>
+          <li>If you completed them: <strong>SlotCorrelation_<span id="fn-slot-3">userXX</span></strong>, <strong>SlotBlindSpots_<span id="fn-slot-4">userXX</span></strong></li>
+        </ul>
+      </li>
+      <li>
+        Under <strong>Instructions</strong>, paste the starter instructions below — then customise them for your slot.
+      </li>
+      <li>Click <strong>Save</strong>.</li>
+    </ol>
+
+    <div class="callout callout-info" style="margin-top:0.75rem">
+      <strong>Reference agent available:</strong> The workspace contains a pre-built agent called <strong>workshop-agent-reference</strong>. If you get stuck, open it and copy its settings as a starting point.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Starter agent instructions</h2>
+    <p>Copy these instructions into your Data Agent's <em>Instructions</em> field, then replace <code>userXX</code> with your slot:</p>
+    <pre id="agent-instructions">You are a data analysis agent for the Azure IaaS Hackathon.
+
+You help a participant understand how system behaviour (telemetry) is driving customer experience (support tickets) for slot <<SLOT>>.
+
+Always filter your queries to SlotId == '<<SLOT>>'. Do not return data from other slots.
+
+You have access to:
+- SlotTelemetry_<<SLOT>>(): per-operation metrics (latency, errors, throughput) from the participant's VM.
+- SlotTickets_<<SLOT>>(): simulated support tickets raised by customers reacting to system behaviour.
+- SlotCorrelation_<<SLOT>>(): pre-built view of time windows where latency spikes and ticket bursts co-occur.
+- SlotBlindSpots_<<SLOT>>(): time windows where tickets spiked but no telemetry anomaly was recorded.
+
+When asked about incidents, latency problems, or customer complaints, correlate Telemetry spikes with Ticket bursts.
+When asked about root causes, look for IncidentId values that link anomalous Telemetry rows to Ticket rows.
+Always include timestamps, affected services, and customer tenants in your answers when available.</pre>
+
+    <button class="btn btn-secondary" id="copy-instructions-btn" style="margin-top:0.5rem">Copy instructions</button>
+  </div>
+
+  <div class="card">
+    <h2>Must-do — Test your agent</h2>
+    <p>After saving, use the <strong>Test</strong> panel in your Data Agent to ask these questions. All answers should reference your slot's data only:</p>
+    <ol class="lab-steps">
+      <li>"What was the average latency in the last hour?"</li>
+      <li>"Were there any latency spikes in the last 2 hours?"</li>
+      <li>"How many support tickets were raised in the last 2 hours?"</li>
+      <li>"Did any latency spikes coincide with an increase in support tickets?"</li>
+    </ol>
+    <p>If the agent answers all four correctly (data in the right ballpark, slot-filtered), mark this challenge complete.</p>
+
+    <div class="callout callout-info">
+      <strong>What good looks like:</strong>
+      <ul style="margin-top:0.5rem">
+        <li>Question 1: returns an average latency value in milliseconds, e.g. "Average latency was 187ms"</li>
+        <li>Question 2: identifies one or more spike windows with timestamps and latency values</li>
+        <li>Question 3: returns a ticket count, e.g. "12 tickets raised"</li>
+        <li>Question 4: identifies at least one correlated window and mentions the affected service</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Stretch — Improve your agent's instructions</h2>
+    <p>The starter instructions are generic. Refine them based on what you've seen in your data:</p>
+    <ul>
+      <li>Name the specific <strong>services</strong> your app uses (from the <code>Service</code> column in Telemetry) so the agent can refer to them by name.</li>
+      <li>Tell the agent the <strong>normal latency range</strong> for your system (from Challenge 1 baselines) so it can reason about what counts as a spike.</li>
+      <li>Tell the agent that <code>IncidentId</code> is the key to connecting a telemetry spike to the customer-facing tickets it caused.</li>
+    </ul>
+    <p>After improving the instructions, re-run the four test questions. The answers should be more specific and confident.</p>
+  </div>
+
+  <a class="link-card" href="https://learn.microsoft.com/en-us/fabric/fundamentals/copilot-fabric-data-agent" target="_blank" rel="noopener noreferrer">
+    <span class="link-card-icon">📖</span>
+    <div class="link-card-body">
+      <div class="link-card-title">Microsoft Fabric Data Agent</div>
+      <div class="link-card-desc">How to create and configure a Fabric Data Agent, grounding options, and instructions best practices.</div>
+    </div>
+  </a>
+
+  <div class="card">
+    <h2>Your progress</h2>
+    <div id="status-row"></div>
+  </div>
+
+  <div class="callout callout-hold">
+    <strong>⏸ Hold for regroup</strong>
+    Once your Data Agent answers all four test questions correctly, click <strong>Complete</strong> above and wait. The facilitator will regroup before opening Part 3.
+  </div>
+
+  <div class="page-nav">
+    <a href="part2-correlation.html" class="btn btn-secondary">← Correlation View</a>
+    <a href="part3-scaffold.html" class="btn btn-primary">Continue to Part 3 →</a>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!WorkshopApp.requireParticipant()) return;
+    WorkshopApp.renderParticipantInfo();
+    WorkshopApp.renderProgressBar();
+    WorkshopApp.renderStatusRow('part2_dataagent');
+
+    var p    = WorkshopApp.loadParticipant();
+    var slot = (p && p.assignedSlot) || 'userXX';
+
+    var banner   = document.getElementById('datalayer-banner');
+    var slotEl   = document.getElementById('banner-slot');
+    var fabricEl = document.getElementById('banner-fabric-link');
+    var fabricUrl = (window.APP_CONFIG || {}).fabricWorkspaceUrl || '';
+
+    if (slotEl)  slotEl.textContent = slot;
+    if (fabricEl && fabricUrl) { fabricEl.href = fabricUrl; banner.style.display = 'flex'; }
+
+    // Inject slot into function name spans
+    ['agent-name-slot','fn-slot-1','fn-slot-2','fn-slot-3','fn-slot-4'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = slot;
+    });
+
+    // Inject slot into KQL/instructions blocks
+    document.querySelectorAll('.kql-starter, #agent-instructions').forEach(function (el) {
+      el.textContent = el.textContent.replace(/<<SLOT>>/g, slot);
+    });
+
+    // Copy instructions button
+    var copyBtn = document.getElementById('copy-instructions-btn');
+    var instrEl = document.getElementById('agent-instructions');
+    if (copyBtn && instrEl) {
+      copyBtn.addEventListener('click', function () {
+        navigator.clipboard.writeText(instrEl.textContent).then(function () {
+          copyBtn.textContent = '✓ Copied';
+          setTimeout(function () { copyBtn.textContent = 'Copy instructions'; }, 2000);
+        });
+      });
+    }
+  });
+</script>
+</body>
+</html>
